@@ -1,0 +1,111 @@
+name: 🐛 Bug Report
+description: Report a bug or issue with a plugin
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please fill out the sections below to help us investigate and fix the issue.
+
+  - type: dropdown
+    id: plugin
+    attributes:
+      label: Affected Plugin
+      description: Which plugin is experiencing the issue?
+      options:
+        - openmediavault-immich
+        - openmediavault-gitea
+        - openmediavault-drone
+        - Common components
+        - Build/CI system
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe what happened and what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should have happened instead?
+      placeholder: Describe the expected behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Information
+      description: Please provide information about your environment
+      placeholder: |
+        - OpenMediaVault version: (e.g., 7.0.4-2)
+        - Plugin version: (e.g., openmediavault-immich 1.0.2)
+        - Docker version: (e.g., 24.0.7)
+        - Docker Compose version: (e.g., 2.21.0)
+        - Browser (if web UI issue): (e.g., Chrome 120.0)
+        - System: (e.g., Debian 12, x86_64)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: Please paste any relevant log output
+      placeholder: |
+        Paste logs from:
+        - OpenMediaVault system logs
+        - Plugin logs (if available via "View Logs" button)
+        - Docker container logs: `docker logs <container-name>`
+        - Browser console (for web UI issues)
+      render: shell
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If applicable, add screenshots to help explain your problem
+      placeholder: Drag and drop images here or paste URLs
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have provided all requested environment information
+          required: true
+        - label: I have included relevant logs or error messages
+          required: true
+        - label: I can reproduce this issue consistently
+          required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+      placeholder: Any additional information that might help diagnose the issue

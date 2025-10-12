@@ -102,6 +102,22 @@ Upon merges to `main`, the workflow validates Semantic Versioning, builds the af
 
 To trigger a manual release bump, edit the appropriate `debian/changelog` files and merge the changes through a pull request.
 
+## Community
+
+This project welcomes contributions! Please see our community guidelines:
+
+- **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to the project
+- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community standards and behavior expectations  
+- **[Security Policy](SECURITY.md)** - How to report security vulnerabilities
+- **[Changelog](CHANGELOG.md)** - Project history and notable changes
+- **[AI Agents Guide](AGENTS.md)** - Guidelines for AI coding agents
+
+### Getting Help
+
+- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/ralphschuler/openmediavault-plugins/issues)
+- **Discussions**: Ask questions and share ideas in [GitHub Discussions](https://github.com/ralphschuler/openmediavault-plugins/discussions)
+- **Documentation**: Check individual plugin README files and project documentation
+
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE) file for details.
