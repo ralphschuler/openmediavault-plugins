@@ -22,14 +22,14 @@ jobs:
         id: matrix
         run: |
           python - <<'PY' >>"$GITHUB_OUTPUT"
-import json
-import os
-plugins = sorted(
-    d for d in os.listdir('.')
-    if d.startswith('openmediavault-') and os.path.isdir(d)
-)
-print(f"matrix={json.dumps({'plugin': plugins})}")
-PY
+          import json
+          import os
+          plugins = sorted(
+              d for d in os.listdir('.')
+              if d.startswith('openmediavault-') and os.path.isdir(d)
+          )
+          print(f"matrix={json.dumps({'plugin': plugins})}")
+          PY
 
   build:
     name: Build plugin packages
