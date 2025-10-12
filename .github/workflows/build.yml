@@ -42,27 +42,14 @@ jobs:
           HEAD_REF: ${{ steps.refs.outputs.head }}
         run: |
           python scripts/list_changed_plugins.py > changed.json
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-import json
-with open('changed.json', 'r', encoding='utf-8') as fh:
-    payload = json.load(fh)
-print('payload=' + json.dumps(payload))
-PY
+          python -c 'import json; payload=json.load(open("changed.json", "r", encoding="utf-8")); print("payload=" + json.dumps(payload))' >> "$GITHUB_OUTPUT"
 
       - name: Build matrix payload
         id: matrix
         env:
           PAYLOAD: ${{ steps.changed.outputs.payload }}
         run: |
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-import json
-import os
-payload = json.loads(os.environ['PAYLOAD'])
-plugins = payload.get('plugins', [])
-matrix = {'plugin': plugins}
-print('matrix=' + json.dumps(matrix))
-print('has_changes=' + ('true' if plugins else 'false'))
-PY
+          python -c 'import json, os; payload=json.loads(os.environ["PAYLOAD"]); plugins=payload.get("plugins", []); print("matrix=" + json.dumps({"plugin": plugins})); print("has_changes=" + ("true" if plugins else "false"))' >> "$GITHUB_OUTPUT"
 
       - name: Collect plugin versions
         id: versions
@@ -70,23 +57,12 @@ PY
         env:
           PAYLOAD: ${{ steps.changed.outputs.payload }}
         run: |
-          PLUGINS=$(python - <<'PY'
-import json
-import os
-payload = json.loads(os.environ['PAYLOAD'])
-print(' '.join(payload.get('plugins', [])))
-PY
-)
+          PLUGINS=$(python -c 'import json, os; payload=json.loads(os.environ["PAYLOAD"]); print(" ".join(payload.get("plugins", [])))')
           if [ -z "$PLUGINS" ]; then
             echo "versions={}" >> "$GITHUB_OUTPUT"
           else
             python scripts/get_plugin_versions.py $PLUGINS > versions.json
-            python - <<'PY' >> "$GITHUB_OUTPUT"
-import json
-with open('versions.json', 'r', encoding='utf-8') as fh:
-    versions = json.load(fh)
-print('versions=' + json.dumps(versions))
-PY
+            python -c 'import json; versions=json.load(open("versions.json", "r", encoding="utf-8")); print("versions=" + json.dumps(versions))' >> "$GITHUB_OUTPUT"
           fi
 
   build:
@@ -159,15 +135,7 @@ PY
         env:
           VERSIONS: ${{ needs.determine.outputs.versions }}
         run: |
-          python - <<'PY' > release_notes.md
-import json
-import os
-versions = json.loads(os.environ.get('VERSIONS', '{}'))
-lines = ["## Updated plugins\n"]
-for plugin, version in sorted(versions.items()):
-    lines.append(f"- {plugin} {version}")
-print('\n'.join(lines))
-PY
+          python -c 'import json, os; versions=json.loads(os.environ.get("VERSIONS", "{}")); lines=["## Updated plugins\n"]; lines.extend(f"- {plugin} {version}" for plugin, version in sorted(versions.items())); print("\n".join(lines))' > release_notes.md
 
       - name: Create and push tags
         env:
@@ -175,17 +143,7 @@ PY
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          python - <<'PY'
-import json
-import os
-import subprocess
-versions = json.loads(os.environ.get('VERSIONS', '{}'))
-for plugin, version in versions.items():
-    tag = f"{plugin}-v{version}"
-    subprocess.run(["git", "tag", "-f", tag], check=True)
-repo_tag = f"v0.0.{os.environ.get('GITHUB_RUN_NUMBER')}"
-subprocess.run(["git", "tag", "-f", repo_tag], check=True)
-PY
+          python -c 'import json, os, subprocess; versions=json.loads(os.environ.get("VERSIONS", "{}")); [subprocess.run(["git", "tag", "-f", "{}-v{}".format(plugin, version)], check=True) for plugin, version in versions.items()]; repo_tag = "v0.0." + os.environ.get("GITHUB_RUN_NUMBER", ""); subprocess.run(["git", "tag", "-f", repo_tag], check=True)'
           git push --force --tags
 
       - name: Create GitHub release
