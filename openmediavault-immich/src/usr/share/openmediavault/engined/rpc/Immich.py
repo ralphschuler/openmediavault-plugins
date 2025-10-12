@@ -104,5 +104,73 @@ class ServiceImmich(BaseDockerService):
     mkconf_script = "/usr/share/openmediavault/mkconf/immich"
     compose_name = "immich"
 
+    @rpc.export
+    def getStatus(self) -> Dict[str, Any]:
+        """Return the running status of the Immich stack."""
+        try:
+            result = subprocess.run(
+                [
+                    "docker",
+                    "compose",
+                    "ls",
+                    "--all",
+                    "--format",
+                    "{{.Name}}\t{{.Status}}",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError as exc:
+            LOGGER.error("Docker not found: %s", exc)
+            return {"running": False, "status": "docker-not-found"}
+
+        running = False
+        status_text = "not-installed"
+        for line in result.stdout.splitlines():
+            if not line:
+                continue
+            name, _, status = line.partition("\t")
+            if name.strip() == "immich":
+                status_text = status.strip() or "unknown"
+                running = "running" in status_text.lower()
+                break
+
+        if result.returncode != 0 and not running:
+            status_text = "error"
+
+        return {"running": running, "status": status_text}
+
+    @rpc.export
+    def install(self) -> Dict[str, str]:
+        """Install and start the Immich stack."""
+        _run_command(
+            ["/bin/bash", "/usr/share/openmediavault/mkconf/immich", "install"]
+        )
+        return {"status": "installed"}
+
+    @rpc.export
+    def remove(self) -> Dict[str, str]:
+        """Remove the Immich stack."""
+        _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/immich", "remove"])
+        return {"status": "removed"}
+
+    @rpc.export
+    def restart(self) -> Dict[str, str]:
+        """Restart the Immich server container."""
+        _run_command(
+            [
+                "docker",
+                "compose",
+                "-f",
+                "/srv/dev-disk-by-label-data/immich/docker-compose.yml",
+                "--env-file",
+                "/srv/dev-disk-by-label-data/immich/.env",
+                "restart",
+                "immich-server",
+            ]
+        )
+        return {"status": "restarted"}
+
 
 rpc.register(ServiceImmich)

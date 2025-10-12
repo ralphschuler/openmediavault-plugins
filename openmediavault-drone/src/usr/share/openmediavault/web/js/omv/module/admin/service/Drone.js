@@ -62,8 +62,12 @@ Ext.define('OMV.module.admin.service.Drone', {
         }];
     },
 
-    onInstall: function() {
-        this.doAjax('install', _('Installing Drone...'), _('Drone has been installed.'));
+    onInstall: function () {
+        this.doAjax(
+            'install',
+            _('Installing Drone...'),
+            _('Drone has been installed.')
+        );
     },
 
     onRemove: function() {
@@ -82,7 +86,7 @@ Ext.define('OMV.module.admin.service.Drone', {
         });
     },
 
-    onRestart: function() {
+    onRestart: function () {
         this.doAjax('restart', _('Restarting Drone...'), _('Drone restarted.'));
     },
 

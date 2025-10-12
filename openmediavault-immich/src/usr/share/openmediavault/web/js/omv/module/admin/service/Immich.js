@@ -62,8 +62,12 @@ Ext.define('OMV.module.admin.service.Immich', {
         }];
     },
 
-    onInstall: function() {
-        this.doAjax('install', _('Installing Immich...'), _('Immich has been installed.'));
+    onInstall: function () {
+        this.doAjax(
+            'install',
+            _('Installing Immich...'),
+            _('Immich has been installed.')
+        );
     },
 
     onRemove: function() {

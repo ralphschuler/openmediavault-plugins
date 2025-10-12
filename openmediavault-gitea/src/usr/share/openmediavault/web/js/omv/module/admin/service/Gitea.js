@@ -62,8 +62,12 @@ Ext.define('OMV.module.admin.service.Gitea', {
         }];
     },
 
-    onInstall: function() {
-        this.doAjax('install', _('Installing Gitea...'), _('Gitea has been installed.'));
+    onInstall: function () {
+        this.doAjax(
+            'install',
+            _('Installing Gitea...'),
+            _('Gitea has been installed.')
+        );
     },
 
     onRemove: function() {
@@ -82,7 +86,7 @@ Ext.define('OMV.module.admin.service.Gitea', {
         });
     },
 
-    onRestart: function() {
+    onRestart: function () {
         this.doAjax('restart', _('Restarting Gitea...'), _('Gitea restarted.'));
     },
 

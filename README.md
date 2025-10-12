@@ -22,9 +22,79 @@ Every plugin directory contains:
 
 1. Make changes in the relevant `openmediavault-<plugin>` directory.
 2. Update the plugin's `debian/changelog` entry with a new [Semantic Versioning](https://semver.org/) number when behaviour changes.
-3. Commit the changes and open a pull request.
+3. **Run linting and formatting** (see Code Quality section below).
+4. Commit the changes and open a pull request.
 
 The GitHub Actions workflow automatically detects which plugins changed and only builds those Debian packages for pull requests and pushes to `main`.
+
+## Code Quality
+
+This repository uses comprehensive linting and formatting tools to maintain code quality across all plugins:
+
+### Linting Tools
+
+- **Python**: [Black](https://black.readthedocs.io/) (formatting), [isort](https://pycqa.github.io/isort/) (import sorting), [flake8](https://flake8.pycqa.org/) (linting)
+- **JavaScript**: [ESLint](https://eslint.org/) (linting), [Prettier](https://prettier.io/) (formatting)
+- **Shell Scripts**: [ShellCheck](https://www.shellcheck.net/) (static analysis)
+- **YAML**: [yamllint](https://yamllint.readthedocs.io/) (linting), [Prettier](https://prettier.io/) (formatting)
+
+### Usage
+
+#### Local Development
+
+Install development dependencies:
+```bash
+# Python tools
+pip install -r requirements-dev.txt
+
+# JavaScript tools (requires Node.js)
+npm install -g eslint prettier
+```
+
+Run linting:
+```bash
+# All files
+npm run lint
+
+# Individual tools
+npm run lint:python    # Black, isort, flake8
+npm run lint:js        # ESLint
+npm run lint:shell     # ShellCheck  
+npm run lint:yaml      # yamllint
+
+# Manual commands
+black --check scripts/ openmediavault-*/src/usr/share/openmediavault/engined/rpc/
+flake8 scripts/ openmediavault-*/src/usr/share/openmediavault/engined/rpc/
+find . -name "*.js" -path "*/openmediavault-*" -exec eslint {} +
+```
+
+Apply formatting:
+```bash
+# All files
+npm run format
+
+# Individual tools  
+npm run format:python  # Black + isort
+npm run format:js      # Prettier for JS
+npm run format:yaml    # Prettier for YAML
+
+# Manual commands
+black scripts/ openmediavault-*/src/usr/share/openmediavault/engined/rpc/
+prettier --write **/*.{js,yml,yaml}
+```
+
+#### Automated Workflows
+
+- **`lint.yml`**: Runs on every PR and push to `main`, validates all file types
+- **`format.yml`**: Manual workflow for auto-formatting code (use "Run workflow" button)
+
+### Configuration Files
+
+- `pyproject.toml` - Python tools configuration
+- `eslint.config.js` - JavaScript linting rules  
+- `.prettierrc.json` - JavaScript/YAML formatting
+- `.yamllint.yml` - YAML linting rules
+- `.editorconfig` - Universal editor settings
 
 ## Releasing
 
