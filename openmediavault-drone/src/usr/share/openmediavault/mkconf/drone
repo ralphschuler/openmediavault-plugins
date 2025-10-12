@@ -1,0 +1,122 @@
+#!/bin/bash
+set -euo pipefail
+
+ACTION="${1:-}"
+STACK_DIR="/srv/dev-disk-by-label-data/drone"
+COMPOSE_FILE="${STACK_DIR}/docker-compose.yml"
+ENV_FILE="${STACK_DIR}/.env"
+
+error() {
+    echo "[drone] $1" >&2
+}
+
+ensure_requirements() {
+    if ! command -v docker >/dev/null 2>&1; then
+        error "Docker is required but not installed."
+        exit 1
+    fi
+    if ! docker compose version >/dev/null 2>&1; then
+        error "The Docker Compose plugin is required but not installed."
+        exit 1
+    fi
+}
+
+random_secret() {
+    if command -v openssl >/dev/null 2>&1; then
+        openssl rand -hex 16
+    else
+        date +%s | sha256sum | cut -c1-32
+    fi
+}
+
+write_env_file() {
+    local secret
+    if [[ -f "${ENV_FILE}" ]]; then
+        # Preserve existing secret to avoid breaking runners.
+        secret=$(grep '^DRONE_RPC_SECRET=' "${ENV_FILE}" | cut -d'=' -f2- || true)
+    fi
+    if [[ -z "${secret:-}" ]]; then
+        secret=$(random_secret)
+    fi
+
+    cat >"${ENV_FILE}" <<EOT
+DRONE_SERVER_HOST=localhost:8080
+DRONE_SERVER_PROTO=http
+DRONE_RPC_SECRET=${secret}
+DRONE_USER_CREATE=username:admin,admin:true
+TZ=UTC
+EOT
+}
+
+write_compose_file() {
+    cat >"${COMPOSE_FILE}" <<'EOT'
+services:
+  drone-server:
+    image: drone/drone:2
+    restart: unless-stopped
+    environment:
+      DRONE_SERVER_HOST: ${DRONE_SERVER_HOST}
+      DRONE_SERVER_PROTO: ${DRONE_SERVER_PROTO}
+      DRONE_RPC_SECRET: ${DRONE_RPC_SECRET}
+      DRONE_DATABASE_DRIVER: sqlite3
+      DRONE_DATABASE_DATASOURCE: /data/database.sqlite
+      DRONE_USER_CREATE: ${DRONE_USER_CREATE}
+      TZ: ${TZ}
+    ports:
+      - "8080:80"
+    volumes:
+      - ./data:/data
+
+  drone-runner:
+    image: drone/drone-runner-docker:1
+    restart: unless-stopped
+    depends_on:
+      - drone-server
+    environment:
+      DRONE_RPC_PROTO: ${DRONE_SERVER_PROTO}
+      DRONE_RPC_HOST: drone-server
+      DRONE_RPC_SECRET: ${DRONE_RPC_SECRET}
+      DRONE_RUNNER_CAPACITY: 2
+      DRONE_RUNNER_NAME: omv-runner
+      TZ: ${TZ}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  default:
+    name: drone
+EOT
+}
+
+docker_compose() {
+    docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" "$@"
+}
+
+install() {
+    ensure_requirements
+    mkdir -p "${STACK_DIR}"
+    write_env_file
+    write_compose_file
+    docker_compose pull
+    docker_compose up -d
+}
+
+remove() {
+    if [[ -f "${COMPOSE_FILE}" ]]; then
+        docker_compose down --remove-orphans || true
+    fi
+    rm -rf "${STACK_DIR}"
+}
+
+case "${ACTION}" in
+    install)
+        install
+        ;;
+    remove)
+        remove
+        ;;
+    *)
+        echo "Usage: $0 {install|remove}" >&2
+        exit 1
+        ;;
+esac

@@ -1,0 +1,9 @@
+version: "1.0"
+metadata:
+  title: Drone
+  description: Manage the Drone continuous integration server.
+  icon: drone
+component:
+  name: omv-service-drone
+  type: form
+  jsClass: OMV.module.admin.service.Drone

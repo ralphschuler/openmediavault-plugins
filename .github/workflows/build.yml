@@ -1,23 +1,97 @@
-name: Build & Release OMV Plugin
+name: Build & Release OMV Plugins
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
   pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  build:
+  determine:
+    name: Determine changed plugins
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has_changes: ${{ steps.matrix.outputs.has_changes }}
+      versions: ${{ steps.versions.outputs.versions }}
+      payload: ${{ steps.changed.outputs.payload }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve base and head refs
+        id: refs
+        run: |
+          EVENT="${{ github.event_name }}"
+          if [ "$EVENT" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          elif [ -n "${{ github.event.before }}" ]; then
+            BASE="${{ github.event.before }}"
+          else
+            BASE=$(git rev-parse HEAD^)
+          fi
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          echo "head=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Detect changed plugins
+        id: changed
+        env:
+          BASE_REF: ${{ steps.refs.outputs.base }}
+          HEAD_REF: ${{ steps.refs.outputs.head }}
+        run: |
+          python scripts/list_changed_plugins.py > changed.json
+          python -c 'import json; payload=json.load(open("changed.json", "r", encoding="utf-8")); print("payload=" + json.dumps(payload))' >> "$GITHUB_OUTPUT"
+
+      - name: Build matrix payload
+        id: matrix
+        env:
+          PAYLOAD: ${{ steps.changed.outputs.payload }}
+        run: |
+          python -c 'import json, os; payload=json.loads(os.environ["PAYLOAD"]); plugins=payload.get("plugins", []); print("matrix=" + json.dumps({"plugin": plugins})); print("has_changes=" + ("true" if plugins else "false"))' >> "$GITHUB_OUTPUT"
+
+      - name: Collect plugin versions
+        id: versions
+        if: steps.matrix.outputs.has_changes == 'true'
+        env:
+          PAYLOAD: ${{ steps.changed.outputs.payload }}
+        run: |
+          PLUGINS=$(python -c 'import json, os; payload=json.loads(os.environ["PAYLOAD"]); print(" ".join(payload.get("plugins", [])))')
+          if [ -z "$PLUGINS" ]; then
+            echo "versions={}" >> "$GITHUB_OUTPUT"
+          else
+            python scripts/get_plugin_versions.py $PLUGINS > versions.json
+            python -c 'import json; versions=json.load(open("versions.json", "r", encoding="utf-8")); print("versions=" + json.dumps(versions))' >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Build plugin packages
+    needs: determine
+    if: needs.determine.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.determine.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Debian build tools
         run: |
           sudo apt-get update
           sudo apt-get install -y debhelper devscripts lintian dpkg-dev build-essential
 
+      - name: Parse changelog version
+        id: meta
+        working-directory: ${{ matrix.plugin }}
+        run: |
+          VERSION=$(dpkg-parsechangelog -SVersion)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Build .deb package
+        working-directory: ${{ matrix.plugin }}
         env:
           DEBFULLNAME: Inhaus AI
           DEBEMAIL: dev@inhaus.ai
@@ -25,24 +99,60 @@ jobs:
           dpkg-buildpackage -b -us -uc
 
       - name: Lint package
+        working-directory: ${{ matrix.plugin }}
         run: lintian ../*.deb || true
+
+      - name: Collect artifacts
+        working-directory: ${{ matrix.plugin }}
+        run: |
+          mkdir -p dist
+          mv ../*.deb dist/
 
       - uses: actions/upload-artifact@v4
         with:
-          name: deb
-          path: ../*.deb
+          name: ${{ matrix.plugin }}-${{ steps.meta.outputs.version }}
+          path: ${{ matrix.plugin }}/dist/*.deb
 
   release:
-    needs: build
+    name: Publish release
+    needs:
+      - determine
+      - build
+    if: needs.determine.outputs.has_changes == 'true' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: actions/download-artifact@v4
         with:
-          name: deb
+          path: dist
 
-      - uses: softprops/action-gh-release@v1
+      - name: Prepare release notes
+        id: notes
+        env:
+          VERSIONS: ${{ needs.determine.outputs.versions }}
+        run: |
+          python -c 'import json, os; versions=json.loads(os.environ.get("VERSIONS", "{}")); lines=["## Updated plugins\n"]; lines.extend(f"- {plugin} {version}" for plugin, version in sorted(versions.items())); print("\n".join(lines))' > release_notes.md
+
+      - name: Create and push tags
+        env:
+          VERSIONS: ${{ needs.determine.outputs.versions }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          python -c 'import json, os, subprocess; versions=json.loads(os.environ.get("VERSIONS", "{}")); [subprocess.run(["git", "tag", "-f", "{}-v{}".format(plugin, version)], check=True) for plugin, version in versions.items()]; repo_tag = "v0.0." + os.environ.get("GITHUB_RUN_NUMBER", ""); subprocess.run(["git", "tag", "-f", repo_tag], check=True)'
+          git push --force --tags
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
         with:
-          files: '*.deb'
+          tag_name: v0.0.${{ github.run_number }}
+          name: OMV plugins release ${{ github.run_number }}
+          body_path: release_notes.md
+          files: dist/**/*.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
