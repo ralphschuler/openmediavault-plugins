@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for requesting a new plugin! Please provide detailed information 
+        Thank you for requesting a new plugin! Please provide detailed information
         about the service you'd like to see supported.
 
   - type: input
