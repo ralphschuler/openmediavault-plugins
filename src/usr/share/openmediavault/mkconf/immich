@@ -1,0 +1,173 @@
+#!/bin/bash
+set -euo pipefail
+
+ACTION="${1:-}"
+STACK_DIR="/srv/dev-disk-by-label-data/immich"
+COMPOSE_FILE="${STACK_DIR}/docker-compose.yml"
+ENV_FILE="${STACK_DIR}/.env"
+
+error() {
+    echo "[immich] $1" >&2
+}
+
+ensure_requirements() {
+    if ! command -v docker >/dev/null 2>&1; then
+        error "Docker is required but not installed."
+        exit 1
+    fi
+    if ! docker compose version >/dev/null 2>&1; then
+        error "The Docker Compose plugin is required but not installed."
+        exit 1
+    fi
+}
+
+write_env_file() {
+    cat >"${ENV_FILE}" <<EOT
+IMMICH_VERSION=release
+POSTGRES_PASSWORD=immich
+POSTGRES_USER=immich
+POSTGRES_DB=immich
+REDIS_PASSWORD=immich
+UPLOAD_LOCATION=${STACK_DIR}/library
+TZ=UTC
+EOT
+}
+
+write_compose_file() {
+    cat >"${COMPOSE_FILE}" <<'EOT'
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION}
+    restart: unless-stopped
+    depends_on:
+      - immich-db
+      - immich-redis
+      - immich-typesense
+    environment:
+      DB_HOST: immich-db
+      DB_PORT: "5432"
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_DATABASE_NAME: ${POSTGRES_DB}
+      REDIS_HOSTNAME: immich-redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      IMMICH_PORT: "2283"
+      TZ: ${TZ}
+    ports:
+      - "2283:2283"
+    volumes:
+      - ${UPLOAD_LOCATION}:/usr/src/app/upload
+    healthcheck:
+      test: ["CMD", "node", "/usr/src/app/dist/apps/immich/server/main.js", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  immich-web:
+    image: ghcr.io/immich-app/immich-web:${IMMICH_VERSION}
+    restart: unless-stopped
+    depends_on:
+      - immich-server
+    environment:
+      IMMICH_SERVER_URL_EXTERNAL: http://localhost:2283
+      TZ: ${TZ}
+    ports:
+      - "2285:3000"
+
+  immich-microservices:
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION}
+    command: ["./start-microservices.sh"]
+    restart: unless-stopped
+    depends_on:
+      - immich-db
+      - immich-redis
+      - immich-typesense
+    environment:
+      DB_HOST: immich-db
+      DB_PORT: "5432"
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_DATABASE_NAME: ${POSTGRES_DB}
+      REDIS_HOSTNAME: immich-redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      TZ: ${TZ}
+    volumes:
+      - ${UPLOAD_LOCATION}:/usr/src/app/upload
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION}
+    restart: unless-stopped
+    environment:
+      IMMICH_PORT: "2283"
+      TZ: ${TZ}
+    volumes:
+      - ${UPLOAD_LOCATION}:/cache
+
+  immich-db:
+    image: tensorchord/pgvecto-rs:pg14
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: ${TZ}
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+
+  immich-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", ${REDIS_PASSWORD}]
+    volumes:
+      - ./redis:/data
+
+  immich-typesense:
+    image: typesense/typesense:0.25.2
+    restart: unless-stopped
+    environment:
+      TYPESENSE_API_KEY: ${REDIS_PASSWORD}
+      TZ: ${TZ}
+    command: ["typesense-server", "--api-key=${REDIS_PASSWORD}", "--data-dir=/data", "--enable-cors"]
+    volumes:
+      - ./typesense:/data
+
+networks:
+  default:
+    name: immich
+EOT
+}
+
+docker_compose() {
+    docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" "$@"
+}
+
+install() {
+    ensure_requirements
+    mkdir -p "${STACK_DIR}" "${STACK_DIR}/library"
+    write_env_file
+    write_compose_file
+    docker_compose pull
+    docker_compose up -d
+}
+
+remove() {
+    if [[ -f "${COMPOSE_FILE}" ]]; then
+        docker_compose down --remove-orphans || true
+    fi
+    rm -rf "${STACK_DIR}"
+}
+
+case "${ACTION}" in
+    install)
+        install
+        ;;
+    remove)
+        remove
+        ;;
+    *)
+        echo "Usage: $0 {install|remove}" >&2
+        exit 1
+        ;;
+esac
