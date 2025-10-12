@@ -13,6 +13,25 @@ Ext.define('OMV.module.admin.service.Gitea', {
         xtype: 'button'
     },
 
+    getFormItems: function() {
+        var me = this;
+        return [{
+            xtype: 'fieldset',
+            title: _('Service Status'),
+            items: [{
+                xtype: 'displayfield',
+                fieldLabel: _('Status'),
+                name: 'status',
+                value: _('Loading...')
+            }, {
+                xtype: 'displayfield',
+                fieldLabel: _('Running'),
+                name: 'running', 
+                value: _('Loading...')
+            }]
+        }];
+    },
+
     getButtonItems: function() {
         var me = this;
         return [{

@@ -1,0 +1,13 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build artifacts
+*.deb
+build/
+dist/
+
+# Temporary files
+*~
+.tmp/
