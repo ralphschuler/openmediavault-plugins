@@ -1,4 +1,4 @@
-Source: openmediavault-drone-ci
+Source: openmediavault-drone
 Section: devel
 Priority: optional
 Maintainer: Inhaus AI <dev@inhaus.ai>
@@ -7,11 +7,11 @@ Build-Depends: debhelper (>= 12),
  build-essential
 Homepage: https://www.drone.io/
 
-Package: openmediavault-drone-ci
+Package: openmediavault-drone
 Architecture: all
 Depends:
  openmediavault (>= 7.0),
  docker.io | podman,
  docker-compose-plugin | docker-compose
 Description: OpenMediaVault plugin for the Drone continuous integration server
- Provides WebUI integration and Docker stack management for Drone CI.
+ Provides WebUI integration and Docker stack management for Drone.

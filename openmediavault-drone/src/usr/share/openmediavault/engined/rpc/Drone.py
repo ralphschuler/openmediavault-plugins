@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Drone CI RPC service for OpenMediaVault."""
+"""Drone RPC service for OpenMediaVault."""
 
 import logging
 import subprocess
@@ -27,14 +27,14 @@ def _run_command(command: Any) -> subprocess.CompletedProcess:
     return completed
 
 
-class ServiceDroneCI(rpc.Service):
-    """RPC service to manage the Drone CI Docker stack."""
+class ServiceDrone(rpc.Service):
+    """RPC service to manage the Drone Docker stack."""
 
-    name = "DroneCI"
+    name = "Drone"
 
     @rpc.export
     def getStatus(self) -> Dict[str, Any]:
-        """Return the running status of the Drone CI stack."""
+        """Return the running status of the Drone stack."""
         try:
             result = subprocess.run(
                 [
@@ -59,7 +59,7 @@ class ServiceDroneCI(rpc.Service):
             if not line:
                 continue
             name, _, status = line.partition("\t")
-            if name.strip() == "drone-ci":
+            if name.strip() == "drone":
                 status_text = status.strip() or "unknown"
                 running = "running" in status_text.lower()
                 break
@@ -71,27 +71,27 @@ class ServiceDroneCI(rpc.Service):
 
     @rpc.export
     def install(self) -> Dict[str, str]:
-        """Install and start the Drone CI stack."""
-        _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/drone-ci", "install"])
+        """Install and start the Drone stack."""
+        _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/drone", "install"])
         return {"status": "installed"}
 
     @rpc.export
     def remove(self) -> Dict[str, str]:
-        """Remove the Drone CI stack."""
-        _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/drone-ci", "remove"])
+        """Remove the Drone stack."""
+        _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/drone", "remove"])
         return {"status": "removed"}
 
     @rpc.export
     def restart(self) -> Dict[str, str]:
-        """Restart the Drone CI server container."""
+        """Restart the Drone server container."""
         _run_command(
             [
                 "docker",
                 "compose",
                 "-f",
-                "/srv/dev-disk-by-label-data/drone-ci/docker-compose.yml",
+                "/srv/dev-disk-by-label-data/drone/docker-compose.yml",
                 "--env-file",
-                "/srv/dev-disk-by-label-data/drone-ci/.env",
+                "/srv/dev-disk-by-label-data/drone/.env",
                 "restart",
                 "drone-server",
             ]
@@ -99,4 +99,4 @@ class ServiceDroneCI(rpc.Service):
         return {"status": "restarted"}
 
 
-rpc.register(ServiceDroneCI)
+rpc.register(ServiceDrone)

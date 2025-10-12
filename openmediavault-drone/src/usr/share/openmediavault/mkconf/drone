@@ -2,12 +2,12 @@
 set -euo pipefail
 
 ACTION="${1:-}"
-STACK_DIR="/srv/dev-disk-by-label-data/drone-ci"
+STACK_DIR="/srv/dev-disk-by-label-data/drone"
 COMPOSE_FILE="${STACK_DIR}/docker-compose.yml"
 ENV_FILE="${STACK_DIR}/.env"
 
 error() {
-    echo "[drone-ci] $1" >&2
+    echo "[drone] $1" >&2
 }
 
 ensure_requirements() {
@@ -84,7 +84,7 @@ services:
 
 networks:
   default:
-    name: drone-ci
+    name: drone
 EOT
 }
 

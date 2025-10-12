@@ -1,9 +1,9 @@
 version: "1.0"
 metadata:
-  title: Drone CI
+  title: Drone
   description: Manage the Drone continuous integration server.
-  icon: drone-ci
+  icon: drone
 component:
-  name: omv-service-drone-ci
+  name: omv-service-drone
   type: form
-  jsClass: OMV.module.admin.service.DroneCI
+  jsClass: OMV.module.admin.service.Drone

@@ -8,7 +8,7 @@ This repository hosts multiple OpenMediaVault 7 plugins maintained as a monorepo
 openmediavault-plugins/
 ├── openmediavault-immich     # Immich photo server integration
 ├── openmediavault-gitea      # Gitea self-hosted Git service
-├── openmediavault-drone-ci   # Drone continuous integration service
+├── openmediavault-drone      # Drone continuous integration service
 └── ...                       # Additional plugins live alongside these folders
 ```
 

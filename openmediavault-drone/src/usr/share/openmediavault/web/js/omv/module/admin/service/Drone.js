@@ -1,11 +1,11 @@
 // require("js/omv/WorkspaceManager.js");
 // require("js/omv/module/admin/service/ServicePanel.js");
 
-Ext.define('OMV.module.admin.service.DroneCI', {
+Ext.define('OMV.module.admin.service.Drone', {
     extend: 'OMV.module.admin.service.ServicePanel',
-    alias: 'widget.service-droneci',
+    alias: 'widget.service-drone',
 
-    rpcService: 'DroneCI',
+    rpcService: 'Drone',
     rpcGetMethod: 'getStatus',
 
     defaults: {
@@ -33,22 +33,22 @@ Ext.define('OMV.module.admin.service.DroneCI', {
     },
 
     onInstall: function() {
-        this.doAjax('install', _('Installing Drone CI...'), _('Drone CI has been installed.'));
+        this.doAjax('install', _('Installing Drone...'), _('Drone has been installed.'));
     },
 
     onRemove: function() {
-        this.doAjax('remove', _('Removing Drone CI...'), _('Drone CI stack removed.'));
+        this.doAjax('remove', _('Removing Drone...'), _('Drone stack removed.'));
     },
 
     onRestart: function() {
-        this.doAjax('restart', _('Restarting Drone CI...'), _('Drone CI restarted.'));
+        this.doAjax('restart', _('Restarting Drone...'), _('Drone restarted.'));
     }
 });
 
 OMV.WorkspaceManager.registerPanel({
-    id: 'drone-ci',
+    id: 'drone',
     path: '/service',
-    text: _('Drone CI'),
+    text: _('Drone'),
     position: 92,
-    className: 'OMV.module.admin.service.DroneCI'
+    className: 'OMV.module.admin.service.Drone'
 });
