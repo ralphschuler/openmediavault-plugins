@@ -1,6 +1,6 @@
 export default [
     {
-        files: ['**/*.js'],
+        files: ['openmediavault-*/src/**/*.js'],
         languageOptions: {
             ecmaVersion: 2018,
             sourceType: 'script',
