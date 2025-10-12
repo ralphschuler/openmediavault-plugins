@@ -10,7 +10,9 @@ from pathlib import Path
 from typing import Dict
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SEMVER_RE = re.compile(r"^(?P<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$")
+SEMVER_RE = re.compile(
+    r"^(?P<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$"
+)
 
 
 def read_version(plugin: str) -> str:

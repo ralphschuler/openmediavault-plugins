@@ -1,0 +1,26 @@
+{
+  "name": "openmediavault-plugins",
+  "version": "1.0.0",
+  "description": "OpenMediaVault plugins monorepo",
+  "type": "module",
+  "scripts": {
+    "lint": "npm run lint:js && npm run lint:python && npm run lint:shell && npm run lint:yaml",
+    "lint:js": "eslint **/*.js",
+    "lint:python": "black --check scripts/ openmediavault-*/src/usr/share/openmediavault/engined/rpc/ && flake8 scripts/ openmediavault-*/src/usr/share/openmediavault/engined/rpc/",
+    "lint:shell": "find . -type f \\( -name '*.sh' -o -name 'mkconf' -o -name 'postinst' -o -name 'prerm' \\) -path '*/openmediavault-*' -exec shellcheck {} +",
+    "lint:yaml": "yamllint .",
+    "format": "npm run format:js && npm run format:python && npm run format:yaml",
+    "format:js": "prettier --write **/*.js",
+    "format:python": "black scripts/ openmediavault-*/src/usr/share/openmediavault/engined/rpc/ && isort scripts/ openmediavault-*/src/usr/share/openmediavault/engined/rpc/",
+    "format:yaml": "prettier --write **/*.{yml,yaml}"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ralphschuler/openmediavault-plugins.git"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0"
+  }
+}

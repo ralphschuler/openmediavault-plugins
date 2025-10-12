@@ -72,7 +72,9 @@ class ServiceImmich(rpc.Service):
     @rpc.export
     def install(self) -> Dict[str, str]:
         """Install and start the Immich stack."""
-        _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/immich", "install"])
+        _run_command(
+            ["/bin/bash", "/usr/share/openmediavault/mkconf/immich", "install"]
+        )
         return {"status": "installed"}
 
     @rpc.export
