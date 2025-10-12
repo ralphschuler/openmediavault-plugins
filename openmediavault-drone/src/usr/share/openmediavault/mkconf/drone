@@ -108,6 +108,14 @@ remove() {
     rm -rf "${STACK_DIR}"
 }
 
+restart() {
+    if [[ ! -f "${COMPOSE_FILE}" ]]; then
+        error "Drone stack is not installed. Please install it first."
+        exit 1
+    fi
+    docker_compose restart
+}
+
 case "${ACTION}" in
     install)
         install
@@ -115,8 +123,11 @@ case "${ACTION}" in
     remove)
         remove
         ;;
+    restart)
+        restart
+        ;;
     *)
-        echo "Usage: $0 {install|remove}" >&2
+        echo "Usage: $0 {install|remove|restart}" >&2
         exit 1
         ;;
 esac
