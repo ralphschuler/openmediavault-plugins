@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+
+if [ "$1" = "remove" ] || [ "$1" = "deconfigure" ]; then
+    if [ -x /usr/share/openmediavault/mkconf/drone-ci ]; then
+        /usr/share/openmediavault/mkconf/drone-ci remove || true
+    fi
+fi
+
+exit 0

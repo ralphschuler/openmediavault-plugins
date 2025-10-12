@@ -1,0 +1,17 @@
+Source: openmediavault-gitea
+Section: net
+Priority: optional
+Maintainer: Inhaus AI <dev@inhaus.ai>
+Standards-Version: 4.6.2
+Build-Depends: debhelper (>= 12),
+ build-essential
+Homepage: https://about.gitea.com/
+
+Package: openmediavault-gitea
+Architecture: all
+Depends:
+ openmediavault (>= 7.0),
+ docker.io | podman,
+ docker-compose-plugin | docker-compose
+Description: OpenMediaVault plugin for the Gitea self-hosted Git service
+ Provides WebUI integration and Docker stack management for Gitea.
