@@ -33,6 +33,29 @@ def _git_diff_files(base: str, head: str) -> Iterable[str]:
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
+def _get_latest_tag() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "describe", "--tags", "--abbrev=0", "--match", "v*"],
+            check=True,
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT,
+        )
+    except subprocess.CalledProcessError:
+        return None
+    tag = result.stdout.strip()
+    return tag or None
+
+
+def _list_all_plugins() -> Set[str]:
+    return {
+        entry.name
+        for entry in REPO_ROOT.iterdir()
+        if entry.is_dir() and entry.name.startswith(PLUGIN_PREFIX)
+    }
+
+
 def _resolve_plugin(path: Path) -> str | None:
     parts = path.parts
     if not parts:
@@ -56,14 +79,21 @@ def find_changed_plugins(base: str, head: str) -> Set[str]:
 def main() -> None:
     base_ref = os.environ.get("BASE_REF")
     head_ref = os.environ.get("HEAD_REF", "HEAD")
-    if not base_ref:
-        print(json.dumps({"plugins": [], "has_changes": False}))
-        return
+    plugins: Set[str]
 
-    plugins = sorted(find_changed_plugins(base_ref, head_ref))
+    if base_ref:
+        plugins = find_changed_plugins(base_ref, head_ref)
+    else:
+        latest_tag = _get_latest_tag()
+        if latest_tag:
+            plugins = find_changed_plugins(latest_tag, head_ref)
+        else:
+            plugins = _list_all_plugins()
+
+    plugins_list = sorted(plugins)
     payload = {
-        "plugins": plugins,
-        "has_changes": bool(plugins),
+        "plugins": plugins_list,
+        "has_changes": bool(plugins_list),
     }
     json.dump(payload, sys.stdout)
 
