@@ -15,7 +15,7 @@ jobs:
       - name: Setup Debian build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y debhelper devscripts lintian dpkg-dev
+          sudo apt-get install -y debhelper devscripts lintian dpkg-dev build-essential
 
       - name: Build .deb package
         env:
