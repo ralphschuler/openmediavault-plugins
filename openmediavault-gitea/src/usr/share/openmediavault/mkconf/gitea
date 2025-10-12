@@ -13,10 +13,17 @@ error() {
 ensure_requirements() {
     if ! command -v docker >/dev/null 2>&1; then
         error "Docker is required but not installed."
+        error "Please install Docker first: apt update && apt install -y docker.io"
         exit 1
     fi
     if ! docker compose version >/dev/null 2>&1; then
         error "The Docker Compose plugin is required but not installed."
+        error "Please install Docker Compose plugin: apt update && apt install -y docker-compose-plugin"
+        exit 1
+    fi
+    if ! systemctl is-active --quiet docker; then
+        error "Docker service is not running."
+        error "Please start Docker service: systemctl start docker"
         exit 1
     fi
 }
@@ -96,6 +103,14 @@ remove() {
     rm -rf "${STACK_DIR}"
 }
 
+restart() {
+    if [[ ! -f "${COMPOSE_FILE}" ]]; then
+        error "Gitea stack is not installed. Please install it first."
+        exit 1
+    fi
+    docker_compose restart
+}
+
 case "${ACTION}" in
     install)
         install
@@ -103,8 +118,11 @@ case "${ACTION}" in
     remove)
         remove
         ;;
+    restart)
+        restart
+        ;;
     *)
-        echo "Usage: $0 {install|remove}" >&2
+        echo "Usage: $0 {install|remove|restart}" >&2
         exit 1
         ;;
 esac
