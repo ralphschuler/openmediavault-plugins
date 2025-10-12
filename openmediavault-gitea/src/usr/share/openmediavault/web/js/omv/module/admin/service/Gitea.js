@@ -13,34 +13,46 @@ Ext.define('OMV.module.admin.service.Gitea', {
         xtype: 'button'
     },
 
-    getButtonItems: function() {
-        return [{
-            text: _('Install'),
-            iconCls: 'x-fa fa-download',
-            handler: this.onInstall,
-            scope: this
-        }, {
-            text: _('Restart'),
-            iconCls: 'x-fa fa-sync',
-            handler: this.onRestart,
-            scope: this
-        }, {
-            text: _('Remove'),
-            iconCls: 'x-fa fa-trash',
-            handler: this.onRemove,
-            scope: this
-        }];
+    getButtonItems: function () {
+        return [
+            {
+                text: _('Install'),
+                iconCls: 'x-fa fa-download',
+                handler: this.onInstall,
+                scope: this
+            },
+            {
+                text: _('Restart'),
+                iconCls: 'x-fa fa-sync',
+                handler: this.onRestart,
+                scope: this
+            },
+            {
+                text: _('Remove'),
+                iconCls: 'x-fa fa-trash',
+                handler: this.onRemove,
+                scope: this
+            }
+        ];
     },
 
-    onInstall: function() {
-        this.doAjax('install', _('Installing Gitea...'), _('Gitea has been installed.'));
+    onInstall: function () {
+        this.doAjax(
+            'install',
+            _('Installing Gitea...'),
+            _('Gitea has been installed.')
+        );
     },
 
-    onRemove: function() {
-        this.doAjax('remove', _('Removing Gitea...'), _('Gitea stack removed.'));
+    onRemove: function () {
+        this.doAjax(
+            'remove',
+            _('Removing Gitea...'),
+            _('Gitea stack removed.')
+        );
     },
 
-    onRestart: function() {
+    onRestart: function () {
         this.doAjax('restart', _('Restarting Gitea...'), _('Gitea restarted.'));
     }
 });

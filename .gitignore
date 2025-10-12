@@ -1,0 +1,42 @@
+# Build artifacts
+build/
+dist/
+*.deb
+*.tar.gz
+*.tar.xz
+
+# Dependencies
+node_modules/
+.npm/
+*.egg-info/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Linting cache
+.eslintcache
+.mypy_cache/
+.pytest_cache/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+*~

@@ -1,104 +1,104 @@
 name: Build & Release OMV Plugins
 
-on:
-  pull_request:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+'on':
+    pull_request:
+    push:
+        branches:
+            - main
+    workflow_dispatch:
 
 permissions:
-  contents: write
+    contents: write
 
 jobs:
-  prepare:
-    name: Discover plugins
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    prepare:
+        name: Discover plugins
+        runs-on: ubuntu-latest
+        outputs:
+            matrix: ${{ steps.matrix.outputs.matrix }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - name: Build matrix payload
-        id: matrix
-        run: |
-          python - <<'PY' >>"$GITHUB_OUTPUT"
-          import json
-          import os
-          plugins = sorted(
-              d for d in os.listdir('.')
-              if d.startswith('openmediavault-') and os.path.isdir(d)
-          )
-          print(f"matrix={json.dumps({'plugin': plugins})}")
-          PY
+            - name: Build matrix payload
+              id: matrix
+              run: |
+                  python - <<'PY' >>"$GITHUB_OUTPUT"
+                  import json
+                  import os
+                  plugins = sorted(
+                      d for d in os.listdir('.')
+                      if d.startswith('openmediavault-') and os.path.isdir(d)
+                  )
+                  print(f"matrix={json.dumps({'plugin': plugins})}")
+                  PY
 
-  build:
-    name: Build plugin packages
-    needs: prepare
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    build:
+        name: Build plugin packages
+        needs: prepare
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - name: Setup Debian build tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y debhelper devscripts lintian dpkg-dev build-essential
+            - name: Setup Debian build tools
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y debhelper devscripts lintian dpkg-dev build-essential
 
-      - name: Parse changelog version
-        id: meta
-        working-directory: ${{ matrix.plugin }}
-        run: |
-          VERSION=$(dpkg-parsechangelog -SVersion)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            - name: Parse changelog version
+              id: meta
+              working-directory: ${{ matrix.plugin }}
+              run: |
+                  VERSION=$(dpkg-parsechangelog -SVersion)
+                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Build .deb package
-        working-directory: ${{ matrix.plugin }}
-        env:
-          DEBFULLNAME: Inhaus AI
-          DEBEMAIL: dev@inhaus.ai
-        run: |
-          dpkg-buildpackage -b -us -uc
+            - name: Build .deb package
+              working-directory: ${{ matrix.plugin }}
+              env:
+                  DEBFULLNAME: Inhaus AI
+                  DEBEMAIL: dev@inhaus.ai
+              run: |
+                  dpkg-buildpackage -b -us -uc
 
-      - name: Lint package
-        working-directory: ${{ matrix.plugin }}
-        run: lintian ../*.deb || true
+            - name: Lint package
+              working-directory: ${{ matrix.plugin }}
+              run: lintian ../*.deb || true
 
-      - name: Collect artifacts
-        working-directory: ${{ matrix.plugin }}
-        run: |
-          mkdir -p dist
-          mv ../*.deb dist/
+            - name: Collect artifacts
+              working-directory: ${{ matrix.plugin }}
+              run: |
+                  mkdir -p dist
+                  mv ../*.deb dist/
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.plugin }}-${{ steps.meta.outputs.version }}
-          path: ${{ matrix.plugin }}/dist/*.deb
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ matrix.plugin }}-${{ steps.meta.outputs.version }}
+                  path: ${{ matrix.plugin }}/dist/*.deb
 
-  release:
-    name: Publish release
-    needs:
-      - build
-    if: github.event_name != 'pull_request' && needs.build.result == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist
+    release:
+        name: Publish release
+        needs:
+            - build
+        if: github.event_name != 'pull_request' && needs.build.result == 'success'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/download-artifact@v4
+              with:
+                  path: dist
 
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: build-${{ github.run_id }}
-          name: OMV plugins build ${{ github.run_number }}
-          body: |
-            Automated build of OMV plugins.
-          files: dist/**/*.deb
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Create GitHub release
+              uses: softprops/action-gh-release@v1
+              with:
+                  tag_name: build-${{ github.run_id }}
+                  name: OMV plugins build ${{ github.run_number }}
+                  body: |
+                      Automated build of OMV plugins.
+                  files: dist/**/*.deb
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
