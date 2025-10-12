@@ -3,7 +3,8 @@ Section: net
 Priority: optional
 Maintainer: Inhaus AI <dev@inhaus.ai>
 Standards-Version: 4.6.2
-Build-Depends: debhelper (>= 12)
+Build-Depends: debhelper (>= 12),
+ build-essential
 Homepage: https://github.com/immich-app/immich
 
 Package: openmediavault-immich
