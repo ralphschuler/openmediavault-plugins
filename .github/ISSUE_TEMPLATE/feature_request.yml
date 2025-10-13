@@ -1,0 +1,156 @@
+name: ✨ Feature Request
+description: Suggest a new feature or improvement
+title: "[FEATURE] "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a new feature! Please describe your idea clearly so we can evaluate and implement it.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Feature Type
+      description: What type of feature is this?
+      options:
+        - New plugin for a service/application
+        - Enhancement to existing plugin
+        - Improvement to shared components
+        - Development/build tool improvement
+        - Documentation improvement
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: plugin
+    attributes:
+      label: Related Plugin (if applicable)
+      description: Which plugin would this feature affect?
+      options:
+        - openmediavault-immich
+        - openmediavault-gitea
+        - openmediavault-drone
+        - Common components
+        - Build/CI system
+        - New plugin
+        - Not applicable
+    validations:
+      required: false
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What need does it address?
+      placeholder: |
+        Describe the problem you're trying to solve or the need this feature would address.
+        Examples:
+        - "As a user, I want to..."
+        - "Currently it's difficult to..."
+        - "There's no way to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your proposed solution or feature
+      placeholder: |
+        Describe what you'd like to see implemented.
+        Be as specific as possible about:
+        - User interface changes
+        - New functionality
+        - Configuration options
+        - Integration points
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: |
+        Describe any alternative solutions or features you've considered.
+        Include current workarounds if any exist.
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Ideas
+      description: Do you have ideas about how this could be implemented?
+      placeholder: |
+        If you have technical ideas about implementation, please share them:
+        - Docker images or services that could be used
+        - Configuration approaches
+        - UI/UX considerations
+        - Integration patterns
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would significantly improve workflow
+        - High - Critical for my use case
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: complexity
+    attributes:
+      label: Complexity Assessment
+      description: Check all that apply (help us understand the scope)
+      options:
+        - label: This requires new Docker services/containers
+        - label: This needs new web UI components
+        - label: This affects existing plugin functionality
+        - label: This requires changes to shared components
+        - label: This needs new documentation
+        - label: This might break backward compatibility
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples or References
+      description: Are there examples of this feature in other projects?
+      placeholder: |
+        Provide links to:
+        - Similar implementations in other projects
+        - Docker images or services
+        - Documentation or specifications
+        - Screenshots or mockups
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution Interest
+      options:
+        - label: I'm willing to help implement this feature
+        - label: I can provide testing assistance
+        - label: I can help with documentation
+        - label: I can provide feedback during development
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have searched existing issues to ensure this hasn't been requested
+          required: true
+        - label: I have provided a clear problem statement and solution
+          required: true
+        - label: I have considered the impact on existing functionality
+          required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or information about the feature request
+      placeholder: Any additional information that would help us understand and implement this feature

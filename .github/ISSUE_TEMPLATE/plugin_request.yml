@@ -1,0 +1,200 @@
+name: 🔌 New Plugin Request
+description: Request a new plugin for a service or application
+title: "[PLUGIN REQUEST] "
+labels: ["plugin-request", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for requesting a new plugin! Please provide detailed information
+        about the service you'd like to see supported.
+
+  - type: input
+    id: service-name
+    attributes:
+      label: Service/Application Name
+      description: What is the name of the service or application?
+      placeholder: e.g., Nextcloud, Plex, Jellyfin, Portainer
+    validations:
+      required: true
+
+  - type: input
+    id: service-url
+    attributes:
+      label: Official Website/Repository
+      description: Provide the official website or GitHub repository URL
+      placeholder: https://github.com/service/repo or https://service.example.com
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Service Description
+      description: What does this service do? Why would it be useful for OpenMediaVault users?
+      placeholder: |
+        Provide a brief description of the service:
+        - What it does
+        - Why it's useful for home server/NAS users
+        - Key features that would benefit OMV users
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Service Category
+      description: What category best describes this service?
+      options:
+        - Media Server (Plex, Jellyfin, Emby)
+        - Cloud Storage (Nextcloud, ownCloud, Seafile)
+        - Development Tools (GitLab, Jenkins, SonarQube)
+        - Monitoring/Analytics (Grafana, Prometheus, Uptime Kuma)
+        - Backup Solutions (Duplicati, Restic, Borg)
+        - Communication (Rocket.Chat, Mattermost, Element)
+        - File Management (FileBrowser, Filebrowser)
+        - Security (Bitwarden, Authelia, Fail2ban)
+        - Network/VPN (WireGuard, OpenVPN, Pi-hole)
+        - Productivity (Bookstack, Wiki.js, TiddlyWiki)
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: docker-availability
+    attributes:
+      label: Docker Support
+      description: Check all that apply
+      options:
+        - label: Official Docker image is available
+        - label: Community Docker image is available
+        - label: Docker Compose example exists
+        - label: No Docker support (would need containerization)
+
+  - type: textarea
+    id: docker-info
+    attributes:
+      label: Docker Information
+      description: Provide information about Docker images and setup
+      placeholder: |
+        If Docker images exist, please provide:
+        - Docker Hub or registry URLs
+        - Recommended tags/versions
+        - Links to Docker Compose examples
+        - Resource requirements (CPU, RAM, storage)
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Configuration Requirements
+      description: What configuration would this service need?
+      placeholder: |
+        Describe the configuration needs:
+        - Database requirements (if any)
+        - Storage/volume requirements
+        - Network ports that need to be exposed
+        - Environment variables or config files
+        - Initial setup requirements
+
+  - type: textarea
+    id: integration
+    attributes:
+      label: OpenMediaVault Integration
+      description: How should this integrate with OpenMediaVault?
+      placeholder: |
+        Consider:
+        - Should it use OMV shared folders?
+        - Does it need access to existing OMV users/groups?
+        - Should it integrate with OMV's backup system?
+        - Are there any OMV-specific configuration needs?
+
+  - type: textarea
+    id: web-interface
+    attributes:
+      label: Web Interface
+      description: Describe the service's web interface (if applicable)
+      placeholder: |
+        If the service has a web interface:
+        - Default port
+        - Authentication method
+        - Key features accessible via web
+        - Mobile compatibility
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Estimated Complexity
+      description: How complex do you think this plugin would be to implement?
+      options:
+        - Simple - Single container, minimal configuration
+        - Medium - Multiple containers or complex configuration
+        - Complex - Multiple services, databases, complex setup
+        - Unknown - Need more research
+
+  - type: textarea
+    id: similar-projects
+    attributes:
+      label: Similar Existing Solutions
+      description: Are there similar services already available as OMV plugins?
+      placeholder: |
+        List any similar services and how this one differs:
+        - What makes this service unique?
+        - Why would users prefer this over existing options?
+        - Are there specific features not available elsewhere?
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution Interest
+      options:
+        - label: I'm willing to help develop this plugin
+        - label: I can provide testing and feedback
+        - label: I can help with documentation
+        - label: I have experience with this service
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Your Use Case
+      description: How would you use this service?
+      placeholder: |
+        Describe your specific use case:
+        - What problem would this solve for you?
+        - How would you configure and use it?
+        - What features are most important to you?
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority for You
+      description: How important is this plugin to you?
+      options:
+        - Low - Would be nice to have
+        - Medium - Would improve my workflow significantly
+        - High - Critical for my planned setup
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have searched existing issues to ensure this plugin hasn't been requested
+          required: true
+        - label: I have verified this service supports Docker deployment
+          required: true
+        - label: I have provided links to official documentation/repositories
+          required: true
+        - label: I have described the integration requirements clearly
+          required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      description: Any other relevant information about this plugin request
+      placeholder: |
+        Include any additional context:
+        - Links to documentation or tutorials
+        - Screenshots of the service interface
+        - Community resources or forums
+        - Known issues or considerations
