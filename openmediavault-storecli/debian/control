@@ -1,0 +1,19 @@
+Source: openmediavault-storecli
+Section: admin
+Priority: optional
+Maintainer: Inhaus AI <dev@inhaus.ai>
+Standards-Version: 4.6.2
+Build-Depends: debhelper (>= 12),
+ build-essential
+Homepage: https://www.broadcom.com/products/storage/raid-controllers
+
+Package: openmediavault-storecli
+Architecture: all
+Depends:
+ openmediavault (>= 7.0),
+ python3,
+ python3:any
+Description: OpenMediaVault plugin for managing hardware RAID via StoreCLI
+ Provides a web-based interface for the Broadcom/LSI StoreCLI (StorCLI)
+ utility, enabling administrators to inspect controller status and event logs
+ directly from the OpenMediaVault UI.

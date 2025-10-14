@@ -18,6 +18,21 @@ Every plugin directory contains:
 - `src/` – plugin source files installed on the target system.
 - `README.md` – plugin-specific documentation.
 
+## Debian APT repository
+
+The GitHub Actions workflow builds every plugin package and publishes the resulting `.deb` files to the repository's GitHub Pages site via the official Pages deployment action, forming a simple Debian repository suitable for `apt`.
+
+Add the source on your OpenMediaVault host (replace `<owner>` with the GitHub username that owns this repository):
+
+```bash
+echo "deb [trusted=yes] https://<owner>.github.io/openmediavault-plugins stable main" | sudo tee /etc/apt/sources.list.d/openmediavault-plugins.list
+sudo apt update
+```
+
+> **Note:** Packages are currently unsigned. The `[trusted=yes]` flag is required unless you introduce a signing key and update the publishing workflow accordingly.
+
+You can then install any plugin directly via `apt install openmediavault-<plugin>`.
+
 ## Development workflow
 
 1. Make changes in the relevant `openmediavault-<plugin>` directory.

@@ -38,7 +38,7 @@ except ImportError:
 
     class BaseDockerService(rpc.Service):
         """Fallback base service for compatibility."""
-        
+
         @rpc.export
         def getStatus(self) -> Dict[str, Any]:
             """Return the running status of the Gitea stack."""
@@ -79,22 +79,29 @@ except ImportError:
         @rpc.export
         def install(self) -> Dict[str, str]:
             """Install and start the Gitea stack."""
-            _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/gitea", "install"])
+            _run_command(
+                ["/bin/bash", "/usr/share/openmediavault/mkconf/gitea", "install"]
+            )
             return {"status": "installed"}
 
         @rpc.export
         def remove(self) -> Dict[str, str]:
             """Remove the Gitea stack."""
-            _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/gitea", "remove"])
+            _run_command(
+                ["/bin/bash", "/usr/share/openmediavault/mkconf/gitea", "remove"]
+            )
             return {"status": "removed"}
 
         @rpc.export
         def restart(self) -> Dict[str, str]:
             """Restart the Gitea stack."""
-            _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/gitea", "restart"])
+            _run_command(
+                ["/bin/bash", "/usr/share/openmediavault/mkconf/gitea", "restart"]
+            )
             return {"status": "restarted"}
 
-from openmediavault import rpc
+
+from openmediavault import rpc  # noqa: E402
 
 
 class ServiceGitea(BaseDockerService):

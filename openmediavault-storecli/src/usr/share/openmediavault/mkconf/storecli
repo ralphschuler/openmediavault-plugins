@@ -1,0 +1,72 @@
+#!/bin/bash
+set -euo pipefail
+
+ACTION="${1:-}"
+shift || true
+
+error() {
+    echo "[storecli] $1" >&2
+}
+
+find_binary() {
+    local candidate
+    for candidate in storecli storecli64 storcli storcli64; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+            command -v "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+BINARY=""
+if BINARY=$(find_binary); then
+    :
+else
+    BINARY=""
+fi
+
+require_binary() {
+    if [[ -z "$BINARY" ]]; then
+        error "No storecli/storcli binary found in PATH."
+        error "Install Broadcom's StoreCLI utilities and retry."
+        exit 2
+    fi
+}
+
+case "$ACTION" in
+    status)
+        require_binary
+        exec "$BINARY" show summary
+        ;;
+    version)
+        require_binary
+        exec "$BINARY" -v
+        ;;
+    show)
+        require_binary
+        TARGET="${1:-/call}"
+        shift || true
+        if [[ ! "$TARGET" =~ ^/(c[0-9]+|call|all)$ ]]; then
+            error "Invalid controller selector: $TARGET"
+            exit 1
+        fi
+        exec "$BINARY" "$TARGET" "$@"
+        ;;
+    cleanup)
+        # Nothing to clean up yet; placeholder for future enhancements.
+        exit 0
+        ;;
+    *)
+        cat >&2 <<USAGE
+Usage: $0 <action>
+
+Actions:
+  status             Show overall controller summary.
+  version            Print StoreCLI version information.
+  show <target> ...  Run a read-only show command (e.g. /c0 show all).
+  cleanup            Placeholder invoked during package removal.
+USAGE
+        exit 1
+        ;;
+esac

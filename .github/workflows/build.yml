@@ -1,6 +1,8 @@
+---
+# prettier-ignore
 name: Build & Release OMV Plugins
 
-'on':
+on:
     pull_request:
     push:
         branches:
@@ -9,6 +11,8 @@ name: Build & Release OMV Plugins
 
 permissions:
     contents: write
+    pages: write
+    id-token: write
 
 jobs:
     prepare:
@@ -102,3 +106,90 @@ jobs:
                   files: dist/**/*.deb
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    publish-pages:
+        name: Publish APT repository to GitHub Pages
+        needs: build
+        if: github.event_name != 'pull_request' && needs.build.result == 'success'
+        runs-on: ubuntu-latest
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        steps:
+            - uses: actions/download-artifact@v4
+              with:
+                  path: dist
+
+            - name: Prepare APT repository content
+              env:
+                  GITHUB_REPOSITORY: ${{ github.repository }}
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y dpkg-dev apt-utils
+
+                  if ! find dist -name '*.deb' -print -quit | grep -q "."; then
+                      echo "No Debian packages found in artifacts" >&2
+                      exit 1
+                  fi
+
+                  mkdir -p public/dists/stable/main/binary-amd64
+                  mkdir -p public/pool/main
+                  touch public/.nojekyll
+
+                  find dist -name '*.deb' -print0 | while IFS= read -r -d '' deb; do
+                      pkg="$(dpkg-deb --field "$deb" Package)"
+                      target_dir="public/pool/main/${pkg}"
+                      mkdir -p "$target_dir"
+                      cp "$deb" "$target_dir/"
+                  done
+
+                  pushd public
+                  dpkg-scanpackages --multiversion pool/main > dists/stable/main/binary-amd64/Packages
+                  gzip -9fc dists/stable/main/binary-amd64/Packages > dists/stable/main/binary-amd64/Packages.gz
+                  xz -fc dists/stable/main/binary-amd64/Packages > dists/stable/main/binary-amd64/Packages.xz
+
+                  apt-ftparchive \
+                      -o APT::FTPArchive::Release::Origin="OpenMediaVault Plugins" \
+                      -o APT::FTPArchive::Release::Label="OpenMediaVault Plugins" \
+                      -o APT::FTPArchive::Release::Suite="stable" \
+                      -o APT::FTPArchive::Release::Codename="stable" \
+                      -o APT::FTPArchive::Release::Architectures="amd64 all" \
+                      -o APT::FTPArchive::Release::Components="main" \
+                      release dists/stable > dists/stable/Release
+
+                  OWNER="${GITHUB_REPOSITORY%%/*}"
+                  REPO_NAME="${GITHUB_REPOSITORY#*/}"
+                  SITE_URL="https://${OWNER}.github.io/${REPO_NAME}"
+                  cat > index.html <<HTML
+                  <!DOCTYPE html>
+                  <html lang="en">
+                  <head>
+                      <meta charset="utf-8" />
+                      <title>OpenMediaVault Plugins APT Repository</title>
+                      <style>
+                          body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 48rem; line-height: 1.5; color: #111; }
+                          code { background: #f5f5f5; padding: 0.1rem 0.35rem; border-radius: 0.25rem; }
+                          pre { background: #f5f5f5; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+                          h1 { font-size: 2rem; }
+                      </style>
+                  </head>
+                  <body>
+                      <h1>OpenMediaVault Plugins APT Repository</h1>
+                      <p>The Debian packages produced from <code>${GITHUB_REPOSITORY}</code> are published here.</p>
+                      <p>Add the repository to your system by running:</p>
+                      <pre><code>echo "deb [trusted=yes] ${SITE_URL} stable main" | sudo tee /etc/apt/sources.list.d/openmediavault-plugins.list
+sudo apt update</code></pre>
+                      <p>Packages are unsigned; use <code>[trusted=yes]</code> or provide your own signing workflow if required.</p>
+                  </body>
+                  </html>
+                  HTML
+                  popd
+
+            - name: Upload GitHub Pages artifact
+              uses: actions/upload-pages-artifact@v3
+              with:
+                  path: public
+
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4
