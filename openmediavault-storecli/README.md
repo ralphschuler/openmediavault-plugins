@@ -43,4 +43,3 @@ POSIX shell helper. When modifying the code:
 - Run `npm run format` to apply consistent formatting.
 - Run `npm run lint` to ensure JavaScript/TypeScript quality.
 - Update `debian/changelog` and documentation when behavior changes.
-

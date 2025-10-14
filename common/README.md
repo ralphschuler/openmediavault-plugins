@@ -39,7 +39,7 @@ A JavaScript base class for ExtJS service panels in the OpenMediaVault web inter
 ```javascript
 Ext.define('OMV.module.admin.service.MyApp', {
     extend: 'OMV.module.admin.service.BaseDockerServicePanel',
-    
+
     serviceName: 'MyApp',
     webPort: 8080,
     webPath: '/admin'

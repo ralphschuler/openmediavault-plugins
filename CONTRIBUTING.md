@@ -46,21 +46,46 @@ This project and everyone participating in it is governed by our [Code of Conduc
 ### Install Development Dependencies
 
 ```bash
-# Python development tools
+# Clone and setup repository
+git clone https://github.com/ralphschuler/openmediavault-plugins.git
+cd openmediavault-plugins
+
+# Install Python development tools
 pip install -r requirements-dev.txt
 
-# JavaScript development tools  
-npm install -g eslint prettier
+# Install Node.js dependencies
+npm install
 
-# System dependencies (Ubuntu/Debian)
+# Install system dependencies (Ubuntu/Debian)
 sudo apt update
 sudo apt install -y shellcheck yamllint
+
+# Install and setup pre-commit hooks (REQUIRED)
+npm run precommit:install
+```
+
+### Pre-commit Hooks (MANDATORY)
+
+Pre-commit hooks are **required** for all contributors and will:
+- Automatically format your code before each commit
+- Run linting checks to catch issues early
+- Prevent commits with linting errors
+
+```bash
+# Install pre-commit hooks
+npm run precommit:install
+
+# Run pre-commit on all files (optional, for testing)
+npm run precommit:run
+
+# Update hooks to latest versions (as needed)
+npm run precommit:update
 ```
 
 ### Verify Setup
 
 ```bash
-# Test all linting tools
+# Test all linting tools (must pass with zero warnings/errors)
 npm run lint
 
 # Test formatting tools
@@ -80,17 +105,25 @@ npm run format
 
 3. **Test your changes** thoroughly:
    ```bash
-   # Run linting and formatting
+   # REQUIRED: All linting must pass with zero warnings/errors
    npm run lint
+
+   # Format code (or let pre-commit hooks do this automatically)
    npm run format
-   
+
    # Test on OpenMediaVault system
    dpkg-buildpackage -b -us -uc
    sudo dpkg -i ../openmediavault-yourplugin_*.deb
    sudo omv-salt deploy run webui
    ```
 
-4. **Commit your changes**:
+4. **Commit your changes** (pre-commit hooks will run automatically):
+   ```bash
+   git add .
+   git commit -m "feat: add support for new service"
+   ```
+
+   **Note**: If pre-commit hooks make changes, you'll need to add and commit again:
    ```bash
    git add .
    git commit -m "feat: add support for new service"
@@ -108,7 +141,7 @@ npm run format
 We follow conventional commit format:
 
 - `feat:` - New features
-- `fix:` - Bug fixes  
+- `fix:` - Bug fixes
 - `docs:` - Documentation changes
 - `style:` - Code style changes (formatting, etc.)
 - `refactor:` - Code refactoring
@@ -118,7 +151,7 @@ We follow conventional commit format:
 Examples:
 ```
 feat: add Nextcloud plugin with docker compose integration
-fix: resolve port conflict in Gitea configuration  
+fix: resolve port conflict in Gitea configuration
 docs: update installation instructions for Immich plugin
 ```
 
@@ -126,12 +159,18 @@ docs: update installation instructions for Immich plugin
 
 ### Before Submitting
 
-- [ ] All linting passes (`npm run lint`)
-- [ ] Code is properly formatted (`npm run format`)  
-- [ ] Changes have been tested on OpenMediaVault 7.x
-- [ ] Documentation is updated (README.md files)
-- [ ] Commit messages follow conventional format
-- [ ] Version numbers updated in `debian/changelog` if behavior changed
+**STRICT REQUIREMENTS** (PR will be rejected if not met):
+
+- [ ] **Pre-commit hooks installed and working** (`npm run precommit:install`)
+- [ ] **All linting passes with ZERO warnings/errors** (`npm run lint`)
+- [ ] **All CI checks pass** (automated via PR validation workflows)
+- [ ] **Code is properly formatted** (`npm run format` or automatic via pre-commit)
+- [ ] **Changes have been tested on OpenMediaVault 7.x**
+- [ ] **Documentation is updated** (README.md files for affected plugins)
+- [ ] **Commit messages follow conventional format**
+- [ ] **Version numbers updated** in `debian/changelog` if behavior changed
+
+**Note**: Our CI system enforces strict code quality requirements. PRs with any linting warnings or errors will be automatically rejected until fixed.
 
 ### PR Description Template
 
@@ -141,7 +180,7 @@ Brief description of changes made.
 
 ## Type of Change
 - [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality) 
+- [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
 
@@ -155,14 +194,14 @@ Brief description of changes made.
 ## Screenshots (if applicable)
 Add screenshots to help explain your changes.
 
-## Additional Notes  
+## Additional Notes
 Any additional information about the changes.
 ```
 
 ### Review Process
 
 1. **Automated Checks**: GitHub Actions will run linting, formatting, and build tests
-2. **Manual Review**: Maintainers will review code quality, functionality, and documentation  
+2. **Manual Review**: Maintainers will review code quality, functionality, and documentation
 3. **Testing**: Changes may be tested on actual OpenMediaVault systems
 4. **Feedback**: Address any requested changes promptly
 5. **Merge**: Approved PRs will be merged by maintainers
@@ -183,7 +222,7 @@ Any additional information about the changes.
 
 3. **Implement service integration**:
    - Create RPC service inheriting from `BaseDockerService`
-   - Develop web UI panel extending `BaseDockerServicePanel`  
+   - Develop web UI panel extending `BaseDockerServicePanel`
    - Write shell script for Docker Compose management
    - Add comprehensive documentation
 
@@ -201,7 +240,7 @@ openmediavault-service/
 │   └── install        # File installation mapping
 ├── src/
 │   ├── usr/share/openmediavault/engined/rpc/         # Python RPC service
-│   ├── usr/share/openmediavault/mkconf/              # Shell management script  
+│   ├── usr/share/openmediavault/mkconf/              # Shell management script
 │   └── var/www/openmediavault/js/omv/module/         # JavaScript web UI
 └── README.md          # Plugin documentation
 ```
@@ -220,7 +259,7 @@ class ServiceNewService(BaseDockerService):
     compose_name = "newservice"
 ```
 
-```javascript  
+```javascript
 // JavaScript Web UI (when BaseDockerServicePanel is available)
 Ext.define("OMV.module.admin.service.newservice.NewService", {
     extend: "BaseDockerServicePanel",
@@ -237,7 +276,7 @@ Ext.define("OMV.module.admin.service.newservice.NewService", {
 - **Linting**: Follow flake8 rules
 - **Docstrings**: Use Google-style docstrings for public methods
 
-### JavaScript  
+### JavaScript
 - **Formatting**: Use Prettier
 - **Linting**: Follow ESLint configuration
 - **Style**: Use existing OpenMediaVault patterns and conventions
@@ -249,7 +288,7 @@ Ext.define("OMV.module.admin.service.newservice.NewService", {
 - **Style**: Follow existing mkconf script patterns
 
 ### YAML
-- **Formatting**: Use Prettier  
+- **Formatting**: Use Prettier
 - **Linting**: Pass yamllint validation
 - **Indentation**: Use 2 spaces consistently
 
@@ -289,7 +328,7 @@ GitHub Actions automatically:
 ### Resources
 
 - **Documentation**: Check individual plugin README files
-- **Examples**: Reference existing plugin implementations  
+- **Examples**: Reference existing plugin implementations
 - **Base Classes**: See `common/` directory for reusable components
 - **OpenMediaVault Docs**: [Official documentation](https://docs.openmediavault.org/)
 
@@ -311,7 +350,7 @@ GitHub Actions automatically:
 
 Contributors are recognized in:
 - Git commit history
-- Release notes for significant contributions  
+- Release notes for significant contributions
 - README acknowledgments for major features
 
 Thank you for helping improve OpenMediaVault plugins for the community!

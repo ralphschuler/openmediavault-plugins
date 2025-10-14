@@ -9,7 +9,7 @@ Homepage: https://github.com/immich-app/immich
 
 Package: openmediavault-immich
 Architecture: all
-Depends: 
+Depends:
  openmediavault (>= 7.0),
  docker.io | podman,
  docker-compose-plugin | docker-compose

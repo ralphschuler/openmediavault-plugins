@@ -1,0 +1,131 @@
+---
+name: PR Quality Checks
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  # Pre-commit validation
+  pre-commit:
+    name: Pre-commit Hooks
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Install pre-commit
+        run: |
+          pip install pre-commit
+
+      - name: Run pre-commit on all files
+        run: |
+          pre-commit run --all-files --show-diff-on-failure
+
+  # Enforce no linting warnings/errors
+  strict-linting:
+    name: Strict Linting Enforcement
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          # Python tools
+          pip install -r requirements-dev.txt
+          # Node.js tools
+          npm install
+          # System tools
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Run strict linting
+        run: |
+          # This will fail if there are any warnings or errors
+          npm run lint
+
+  # Validate build process
+  build-validation:
+    name: Build Process Validation
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    needs: [pre-commit, strict-linting]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y debhelper devscripts lintian dpkg-dev build-essential
+
+      - name: Test build process
+        run: |
+          # Try to build one plugin to validate build process works
+          if ls openmediavault-*/debian/changelog 1> /dev/null 2>&1; then
+            FIRST_PLUGIN=$(ls -d openmediavault-*/ | head -n 1 | sed 's|/||')
+            echo "Testing build with plugin: $FIRST_PLUGIN"
+            cd "$FIRST_PLUGIN"
+            dpkg-buildpackage -b -us -uc
+            echo "Build test successful"
+          else
+            echo "No plugins found to test build"
+            exit 1
+          fi
+
+  # Documentation validation
+  docs-validation:
+    name: Documentation Validation
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate documentation completeness
+        run: |
+          # Check that each plugin has a README
+          for plugin_dir in openmediavault-*/; do
+            if [ ! -f "${plugin_dir}README.md" ]; then
+              echo "ERROR: Missing README.md in ${plugin_dir}"
+              exit 1
+            fi
+            echo "✓ README found for ${plugin_dir}"
+          done
+
+          # Check that changelog entries exist for plugins
+          for plugin_dir in openmediavault-*/; do
+            if [ ! -f "${plugin_dir}debian/changelog" ]; then
+              echo "ERROR: Missing debian/changelog in ${plugin_dir}"
+              exit 1
+            fi
+            echo "✓ Changelog found for ${plugin_dir}"
+          done
+
+          echo "All documentation validation checks passed"
