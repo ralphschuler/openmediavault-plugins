@@ -1,5 +1,0 @@
-openmediavault-immich (0.1.0) stable; urgency=medium
-
-  * Initial release providing Immich service integration for OpenMediaVault 7.
-
- -- Inhaus AI <dev@inhaus.ai>  Tue, 01 Oct 2024 00:00:00 +0000
