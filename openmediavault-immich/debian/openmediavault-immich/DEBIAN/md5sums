@@ -1,0 +1,6 @@
+5ac9e413dd4f1d9e7b0c0e347d1eb2a7  usr/share/doc/openmediavault-immich/changelog.gz
+1e87189e784ca8671b77c466b7100b91  usr/share/openmediavault/openmediavault/engined/rpc/Immich.py
+52e9b26b8b717332bc843e0d36400f7d  usr/share/openmediavault/openmediavault/icons/immich.svg
+ca23940e9d57bb1cbf2714929768b8bc  usr/share/openmediavault/openmediavault/mkconf/immich
+21b32733c48ef87574ca222c6fccdcc5  usr/share/openmediavault/openmediavault/web/js/omv/module/admin/service/Immich.js
+ed4e1160a2866e090c2d9cd949c75945  usr/share/openmediavault/openmediavault/workbench/component.d/immich.yaml
