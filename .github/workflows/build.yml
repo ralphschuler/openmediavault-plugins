@@ -132,6 +132,8 @@ jobs:
                   fi
 
                   mkdir -p public/dists/stable/main/binary-amd64
+                  mkdir -p public/dists/stable/main/binary-arm64
+                  mkdir -p public/dists/stable/main/binary-all
                   mkdir -p public/pool/main
                   touch public/.nojekyll
 
@@ -143,16 +145,26 @@ jobs:
                   done
 
                   pushd public
-                  dpkg-scanpackages --multiversion pool/main > dists/stable/main/binary-amd64/Packages
-                  gzip -9fc dists/stable/main/binary-amd64/Packages > dists/stable/main/binary-amd64/Packages.gz
-                  xz -fc dists/stable/main/binary-amd64/Packages > dists/stable/main/binary-amd64/Packages.xz
+                  # Since all packages are Architecture: all, we create package lists for all architectures
+                  dpkg-scanpackages --multiversion pool/main > dists/stable/main/binary-all/Packages
+                  gzip -9fc dists/stable/main/binary-all/Packages > dists/stable/main/binary-all/Packages.gz
+                  xz -fc dists/stable/main/binary-all/Packages > dists/stable/main/binary-all/Packages.xz
+
+                  # Create symlinks for architecture-specific directories
+                  ln -s ../binary-all/Packages dists/stable/main/binary-amd64/Packages
+                  ln -s ../binary-all/Packages.gz dists/stable/main/binary-amd64/Packages.gz
+                  ln -s ../binary-all/Packages.xz dists/stable/main/binary-amd64/Packages.xz
+
+                  ln -s ../binary-all/Packages dists/stable/main/binary-arm64/Packages
+                  ln -s ../binary-all/Packages.gz dists/stable/main/binary-arm64/Packages.gz
+                  ln -s ../binary-all/Packages.xz dists/stable/main/binary-arm64/Packages.xz
 
                   apt-ftparchive \
                       -o APT::FTPArchive::Release::Origin="OpenMediaVault Plugins" \
                       -o APT::FTPArchive::Release::Label="OpenMediaVault Plugins" \
                       -o APT::FTPArchive::Release::Suite="stable" \
                       -o APT::FTPArchive::Release::Codename="stable" \
-                      -o APT::FTPArchive::Release::Architectures="amd64 all" \
+                      -o APT::FTPArchive::Release::Architectures="amd64 arm64 all" \
                       -o APT::FTPArchive::Release::Components="main" \
                       release dists/stable > dists/stable/Release
 
