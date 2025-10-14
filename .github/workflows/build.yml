@@ -1,5 +1,3 @@
----
-# prettier-ignore
 name: Build & Release OMV Plugins
 
 on:
@@ -178,7 +176,7 @@ jobs:
                       <p>The Debian packages produced from <code>${GITHUB_REPOSITORY}</code> are published here.</p>
                       <p>Add the repository to your system by running:</p>
                       <pre><code>echo "deb [trusted=yes] ${SITE_URL} stable main" | sudo tee /etc/apt/sources.list.d/openmediavault-plugins.list
-sudo apt update</code></pre>
+                      sudo apt update</code></pre>
                       <p>Packages are unsigned; use <code>[trusted=yes]</code> or provide your own signing workflow if required.</p>
                   </body>
                   </html>
