@@ -1,0 +1,251 @@
+#!/bin/bash
+set -euo pipefail
+
+ACTION="${1:-}"
+STACK_DIR="/srv/dev-disk-by-label-data/certbot"
+COMPOSE_FILE="${STACK_DIR}/docker-compose.yml"
+ENV_FILE="${STACK_DIR}/.env"
+NGINX_CONF="${STACK_DIR}/nginx.conf"
+WEBROOT_DIR="${STACK_DIR}/www"
+
+error() {
+    echo "[certbot] $1" >&2
+}
+
+info() {
+    echo "[certbot] $1"
+}
+
+ensure_requirements() {
+    if ! command -v docker >/dev/null 2>&1; then
+        error "Docker is required but not installed."
+        error "Please install Docker first: apt update && apt install -y docker.io"
+        exit 1
+    fi
+    if ! docker compose version >/dev/null 2>&1; then
+        error "The Docker Compose plugin is required but not installed."
+        error "Please install Docker Compose plugin: apt update && apt install -y docker-compose-plugin"
+        exit 1
+    fi
+    if ! systemctl is-active --quiet docker; then
+        error "Docker service is not running."
+        error "Please start Docker service: systemctl start docker"
+        exit 1
+    fi
+}
+
+write_env_file() {
+    if [[ -f "${ENV_FILE}" ]]; then
+        return
+    fi
+    cat >"${ENV_FILE}" <<'EOT'
+CERTBOT_VERSION=latest
+CERTBOT_EMAIL=admin@example.com
+CERTBOT_DOMAINS=example.com
+CERTBOT_STAGING=1
+HTTP_PORT=80
+TZ=UTC
+EOT
+    info "Created ${ENV_FILE}. Update CERTBOT_EMAIL and CERTBOT_DOMAINS before running install again."
+}
+
+write_nginx_config() {
+    cat >"${NGINX_CONF}" <<'EOT'
+server {
+    listen 80;
+    server_name _;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 200 'Certbot challenge server running.\n';
+        add_header Content-Type text/plain;
+    }
+}
+EOT
+}
+
+write_compose_file() {
+    cat >"${COMPOSE_FILE}" <<'EOT'
+services:
+  challenge-nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./www:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${HTTP_PORT}:80"
+    environment:
+      - TZ=${TZ}
+
+  certbot-runner:
+    image: certbot/certbot:${CERTBOT_VERSION}
+    depends_on:
+      - challenge-nginx
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -e
+        domains=""
+        for domain in $(echo "${CERTBOT_DOMAINS}" | tr ',' ' '); do
+            domains="${domains} -d ${domain}"
+        done
+        staging=""
+        if [ "${CERTBOT_STAGING}" = "1" ]; then
+            staging="--staging"
+        fi
+        if [ -z "${domains}" ]; then
+            echo "No domains configured via CERTBOT_DOMAINS" >&2
+            exit 1
+        fi
+        if [ "${CERTBOT_EMAIL}" = "" ]; then
+            echo "CERTBOT_EMAIL must be set" >&2
+            exit 1
+        fi
+        certbot certonly --webroot --webroot-path /var/www/certbot \
+            --non-interactive --agree-tos --email "${CERTBOT_EMAIL}" \
+            ${domains} ${staging}
+    volumes:
+      - ./etc-letsencrypt:/etc/letsencrypt
+      - ./var-lib-letsencrypt:/var/lib/letsencrypt
+      - ./www:/var/www/certbot
+      - ./logs:/var/log/letsencrypt
+    environment:
+      - TZ=${TZ}
+
+  certbot-renewer:
+    image: certbot/certbot:${CERTBOT_VERSION}
+    restart: unless-stopped
+    depends_on:
+      - challenge-nginx
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -e
+        staging=""
+        if [ "${CERTBOT_STAGING}" = "1" ]; then
+            staging="--staging"
+        fi
+        while :; do
+            certbot renew --webroot --webroot-path /var/www/certbot ${staging};
+            sleep 12h &
+            wait $!
+        done
+    volumes:
+      - ./etc-letsencrypt:/etc/letsencrypt
+      - ./var-lib-letsencrypt:/var/lib/letsencrypt
+      - ./www:/var/www/certbot
+      - ./logs:/var/log/letsencrypt
+    environment:
+      - TZ=${TZ}
+
+networks:
+  default:
+    name: certbot
+EOT
+}
+
+docker_compose() {
+    docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" "$@"
+}
+
+validate_env_file() {
+    if grep -q '^CERTBOT_EMAIL=admin@example.com$' "${ENV_FILE}"; then
+        error "CERTBOT_EMAIL is still set to the placeholder value in ${ENV_FILE}."
+        error "Update the file and run install again."
+        exit 1
+    fi
+
+    if grep -q '^CERTBOT_DOMAINS=example.com$' "${ENV_FILE}"; then
+        error "CERTBOT_DOMAINS is still set to the placeholder value in ${ENV_FILE}."
+        error "Update the file and run install again."
+        exit 1
+    fi
+
+    set -a
+    # shellcheck disable=SC1090
+    source "${ENV_FILE}"
+    set +a
+
+    if [[ -z "${CERTBOT_EMAIL:-}" ]]; then
+        error "CERTBOT_EMAIL cannot be empty."
+        exit 1
+    fi
+
+    if [[ -z "${CERTBOT_DOMAINS:-}" ]]; then
+        error "CERTBOT_DOMAINS cannot be empty."
+        exit 1
+    fi
+}
+
+install() {
+    ensure_requirements
+    mkdir -p "${STACK_DIR}" "${WEBROOT_DIR}" "${STACK_DIR}/etc-letsencrypt" \
+        "${STACK_DIR}/var-lib-letsencrypt" "${STACK_DIR}/logs"
+
+    if [[ ! -f "${ENV_FILE}" ]]; then
+        write_env_file
+        info "Populate ${ENV_FILE} and re-run the install action."
+        exit 0
+    fi
+
+    validate_env_file
+    write_nginx_config
+    write_compose_file
+
+    info "Pulling Certbot stack images..."
+    docker_compose pull
+
+    info "Starting challenge server and renewer services..."
+    docker_compose up -d challenge-nginx certbot-renewer
+
+    info "Requesting certificates with certbot-runner..."
+    docker_compose run --rm certbot-runner
+}
+
+remove() {
+    if [[ -f "${COMPOSE_FILE}" ]]; then
+        docker_compose down --remove-orphans || true
+    fi
+    rm -rf "${STACK_DIR}"
+}
+
+restart() {
+    if [[ ! -f "${COMPOSE_FILE}" ]]; then
+        error "Certbot stack is not installed. Please install it first."
+        exit 1
+    fi
+    docker_compose restart
+}
+
+status() {
+    if [[ ! -f "${COMPOSE_FILE}" ]]; then
+        error "Certbot stack is not installed."
+        exit 1
+    fi
+    docker_compose ps
+}
+
+case "${ACTION}" in
+    install)
+        install
+        ;;
+    remove)
+        remove
+        ;;
+    restart)
+        restart
+        ;;
+    status)
+        status
+        ;;
+    *)
+        echo "Usage: $0 {install|remove|restart|status}" >&2
+        exit 1
+        ;;
+esac

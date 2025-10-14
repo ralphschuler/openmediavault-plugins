@@ -6,6 +6,7 @@ This repository hosts multiple OpenMediaVault 7 plugins maintained as a monorepo
 
 ```
 openmediavault-plugins/
+├── openmediavault-certbot    # Certbot automation for Let's Encrypt certificates
 ├── openmediavault-immich     # Immich photo server integration
 ├── openmediavault-gitea      # Gitea self-hosted Git service
 ├── openmediavault-drone      # Drone continuous integration service

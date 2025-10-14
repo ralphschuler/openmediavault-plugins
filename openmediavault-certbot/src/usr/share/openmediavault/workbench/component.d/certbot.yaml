@@ -1,0 +1,9 @@
+version: '1.0'
+metadata:
+    title: Certbot
+    description: Manage Let's Encrypt certificates issued by Certbot.
+    icon: certbot
+component:
+    name: omv-service-certbot
+    type: form
+    jsClass: OMV.module.admin.service.Certbot

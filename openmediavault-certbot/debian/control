@@ -1,0 +1,17 @@
+Source: openmediavault-certbot
+Section: net
+Priority: optional
+Maintainer: Ralph Schuler <ralph@schuler.io>
+Standards-Version: 4.6.2
+Build-Depends: debhelper (>= 12),
+ build-essential
+Homepage: https://certbot.eff.org/
+
+Package: openmediavault-certbot
+Architecture: all
+Depends:
+ openmediavault (>= 7.0),
+ docker.io | podman,
+ docker-compose-plugin | docker-compose
+Description: OpenMediaVault plugin for Let's Encrypt automation via Certbot
+ Provides Docker stack management and helper scripts to obtain and renew TLS certificates.
