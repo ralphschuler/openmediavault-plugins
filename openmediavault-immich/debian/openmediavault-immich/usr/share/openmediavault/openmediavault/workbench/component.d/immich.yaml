@@ -1,9 +1,0 @@
-version: '1.0'
-metadata:
-    title: Immich
-    description: Manage the Immich self-hosted photo service.
-    icon: immich
-component:
-    name: omv-service-immich
-    type: form
-    jsClass: OMV.module.admin.service.Immich

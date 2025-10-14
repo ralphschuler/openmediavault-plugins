@@ -169,7 +169,6 @@ jobs:
                           PKG_NAME=$(dpkg-deb --field "$deb" Package)
                           PKG_VERSION=$(dpkg-deb --field "$deb" Version)
                           PKG_DESC=$(dpkg-deb --field "$deb" Description | head -n1)
-                          PKG_MAINTAINER=$(dpkg-deb --field "$deb" Maintainer)
 
                           # Extract plugin name (remove openmediavault- prefix)
                           PLUGIN_NAME=${PKG_NAME#openmediavault-}
@@ -206,7 +205,7 @@ jobs:
 
                   # Use a more robust method for multiline replacement
                   python3 << 'EOF'
-                  import re
+
 
                   # Read the HTML file
                   with open('index.html', 'r') as f:

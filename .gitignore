@@ -12,6 +12,11 @@ dist/
 *.deb
 *.tar.gz
 *.tar.xz
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/openmediavault-*/
+test-public/
 
 # Dependencies
 node_modules/

@@ -552,12 +552,12 @@ sudo usermod -aG docker openmediavault</code></pre>
                     button.style.background = '';
                 }, 2000);
             }).catch(() => {
-                // Fallback for older browsers
+                // Fallback for older browsers (document.execCommand is deprecated but widely supported)
                 const textArea = document.createElement('textarea');
                 textArea.value = text;
                 document.body.appendChild(textArea);
                 textArea.select();
-                document.execCommand('copy');
+                document.execCommand('copy'); // Deprecated but necessary fallback
                 document.body.removeChild(textArea);
                 
                 const originalText = button.textContent;
