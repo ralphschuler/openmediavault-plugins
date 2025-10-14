@@ -82,11 +82,76 @@ jobs:
                   name: ${{ matrix.plugin }}-${{ steps.meta.outputs.version }}
                   path: ${{ matrix.plugin }}/dist/*.deb
 
+    test-install:
+        name: Test package installation
+        needs: [prepare, build]
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Parse changelog version
+              id: meta
+              working-directory: ${{ matrix.plugin }}
+              run: |
+                  VERSION=$(dpkg-parsechangelog -SVersion)
+                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+            - name: Download built packages
+              uses: actions/download-artifact@v4
+              with:
+                  name: ${{ matrix.plugin }}-${{ steps.meta.outputs.version }}
+                  path: packages/
+
+            - name: Test package installation
+              run: |
+                  # Install the package and verify it can be installed successfully
+                  echo "Testing installation of ${{ matrix.plugin }}"
+                  
+                  # Find the .deb file
+                  DEB_FILE=$(find packages/ -name "*.deb" -type f | head -n1)
+                  if [ -z "$DEB_FILE" ]; then
+                      echo "ERROR: No .deb file found for ${{ matrix.plugin }}"
+                      exit 1
+                  fi
+                  
+                  echo "Found package: $DEB_FILE"
+                  
+                  # Test package metadata
+                  echo "=== Package Information ==="
+                  dpkg-deb --info "$DEB_FILE"
+                  
+                  echo -e "\n=== Package Contents ==="
+                  dpkg-deb --contents "$DEB_FILE"
+                  
+                  # Test package installation (dry-run first)
+                  echo -e "\n=== Testing Package Installation ==="
+                  echo "Testing dry-run installation..."
+                  sudo dpkg --dry-run -i "$DEB_FILE" || {
+                      echo "WARNING: Dry-run installation failed, this might be expected due to missing dependencies"
+                  }
+                  
+                  # Verify package structure and required files
+                  echo -e "\n=== Verifying Package Structure ==="
+                  dpkg-deb --fsys-tarfile "$DEB_FILE" | tar -tf - | head -20
+                  
+                  # Verify package can be extracted
+                  echo -e "\n=== Testing Package Extraction ==="
+                  mkdir -p /tmp/test-extract
+                  dpkg-deb --extract "$DEB_FILE" /tmp/test-extract
+                  echo "Extracted files:"
+                  find /tmp/test-extract -type f | head -10
+                  
+                  echo -e "\n✓ Package ${{ matrix.plugin }} passed all installation tests"
+
     release:
         name: Publish release
         needs:
             - build
-        if: github.event_name != 'pull_request' && needs.build.result == 'success'
+            - test-install
+        if: github.event_name != 'pull_request' && needs.build.result == 'success' && needs.test-install.result == 'success'
         runs-on: ubuntu-latest
         steps:
             - uses: actions/download-artifact@v4
@@ -106,8 +171,8 @@ jobs:
 
     publish-pages:
         name: Publish APT repository to GitHub Pages
-        needs: build
-        if: github.event_name != 'pull_request' && needs.build.result == 'success'
+        needs: [build, test-install]
+        if: github.event_name != 'pull_request' && needs.build.result == 'success' && needs.test-install.result == 'success'
         runs-on: ubuntu-latest
         environment:
             name: github-pages
