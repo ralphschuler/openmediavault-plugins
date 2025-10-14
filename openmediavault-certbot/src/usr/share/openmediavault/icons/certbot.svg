@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Certbot</title>
+  <defs>
+    <linearGradient id="shield" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+  </defs>
+  <path d="M32 4l22 10v14c0 14.6-9.4 27.9-22 32-12.6-4.1-22-17.4-22-32V14z" fill="url(#shield)" />
+  <path d="M32 22a10 10 0 00-10 10v4h-2a2 2 0 00-2 2v10a2 2 0 002 2h24a2 2 0 002-2V38a2 2 0 00-2-2h-2v-4a10 10 0 00-10-10zm-4 14v-4a4 4 0 018 0v4z" fill="#f8fafc" />
+  <path d="M32 44a4 4 0 110-8 4 4 0 010 8z" fill="#0f172a" />
+</svg>
