@@ -38,7 +38,7 @@ except ImportError:
 
     class BaseDockerService(rpc.Service):
         """Fallback base service for compatibility."""
-        
+
         @rpc.export
         def getStatus(self) -> Dict[str, Any]:
             """Return the running status of the Immich stack."""
@@ -79,22 +79,29 @@ except ImportError:
         @rpc.export
         def install(self) -> Dict[str, str]:
             """Install and start the Immich stack."""
-            _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/immich", "install"])
+            _run_command(
+                ["/bin/bash", "/usr/share/openmediavault/mkconf/immich", "install"]
+            )
             return {"status": "installed"}
 
         @rpc.export
         def remove(self) -> Dict[str, str]:
             """Remove the Immich stack."""
-            _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/immich", "remove"])
+            _run_command(
+                ["/bin/bash", "/usr/share/openmediavault/mkconf/immich", "remove"]
+            )
             return {"status": "removed"}
 
         @rpc.export
         def restart(self) -> Dict[str, str]:
             """Restart the Immich stack."""
-            _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/immich", "restart"])
+            _run_command(
+                ["/bin/bash", "/usr/share/openmediavault/mkconf/immich", "restart"]
+            )
             return {"status": "restarted"}
 
-from openmediavault import rpc
+
+from openmediavault import rpc  # noqa: E402
 
 
 class ServiceImmich(BaseDockerService):

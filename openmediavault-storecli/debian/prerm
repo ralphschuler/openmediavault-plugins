@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+
+if [ "$1" = "remove" ] || [ "$1" = "deconfigure" ]; then
+    if [ -x /usr/share/openmediavault/mkconf/storecli ]; then
+        /usr/share/openmediavault/mkconf/storecli cleanup || true
+    fi
+fi
+
+exit 0

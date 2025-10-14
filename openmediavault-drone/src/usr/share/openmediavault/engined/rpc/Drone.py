@@ -38,7 +38,7 @@ except ImportError:
 
     class BaseDockerService(rpc.Service):
         """Fallback base service for compatibility."""
-        
+
         @rpc.export
         def getStatus(self) -> Dict[str, Any]:
             """Return the running status of the Drone stack."""
@@ -79,22 +79,29 @@ except ImportError:
         @rpc.export
         def install(self) -> Dict[str, str]:
             """Install and start the Drone stack."""
-            _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/drone", "install"])
+            _run_command(
+                ["/bin/bash", "/usr/share/openmediavault/mkconf/drone", "install"]
+            )
             return {"status": "installed"}
 
         @rpc.export
         def remove(self) -> Dict[str, str]:
             """Remove the Drone stack."""
-            _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/drone", "remove"])
+            _run_command(
+                ["/bin/bash", "/usr/share/openmediavault/mkconf/drone", "remove"]
+            )
             return {"status": "removed"}
 
         @rpc.export
         def restart(self) -> Dict[str, str]:
             """Restart the Drone stack."""
-            _run_command(["/bin/bash", "/usr/share/openmediavault/mkconf/drone", "restart"])
+            _run_command(
+                ["/bin/bash", "/usr/share/openmediavault/mkconf/drone", "restart"]
+            )
             return {"status": "restarted"}
 
-from openmediavault import rpc
+
+from openmediavault import rpc  # noqa: E402
 
 
 class ServiceDrone(BaseDockerService):

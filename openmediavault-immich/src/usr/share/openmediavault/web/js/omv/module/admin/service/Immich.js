@@ -13,53 +13,64 @@ Ext.define('OMV.module.admin.service.Immich', {
         xtype: 'button'
     },
 
-    getFormItems: function() {
+    getFormItems: function () {
         var me = this;
-        return [{
-            xtype: 'fieldset',
-            title: _('Service Status'),
-            items: [{
-                xtype: 'displayfield',
-                fieldLabel: _('Status'),
-                name: 'status',
-                value: _('Loading...')
-            }, {
-                xtype: 'displayfield',
-                fieldLabel: _('Running'),
-                name: 'running', 
-                value: _('Loading...')
-            }]
-        }];
+        return [
+            {
+                xtype: 'fieldset',
+                title: _('Service Status'),
+                items: [
+                    {
+                        xtype: 'displayfield',
+                        fieldLabel: _('Status'),
+                        name: 'status',
+                        value: _('Loading...')
+                    },
+                    {
+                        xtype: 'displayfield',
+                        fieldLabel: _('Running'),
+                        name: 'running',
+                        value: _('Loading...')
+                    }
+                ]
+            }
+        ];
     },
 
-    getButtonItems: function() {
+    getButtonItems: function () {
         var me = this;
-        return [{
-            text: _('Install'),
-            iconCls: 'x-fa fa-download',
-            handler: me.onInstall,
-            scope: me
-        }, {
-            text: _('Open Web Interface'),
-            iconCls: 'x-fa fa-external-link',
-            handler: me.onOpenWebInterface,
-            scope: me
-        }, {
-            text: _('Restart'),
-            iconCls: 'x-fa fa-sync',
-            handler: me.onRestart,
-            scope: me
-        }, {
-            text: _('View Logs'),
-            iconCls: 'x-fa fa-file-text',
-            handler: me.onViewLogs,
-            scope: me
-        }, {
-            text: _('Remove'),
-            iconCls: 'x-fa fa-trash',
-            handler: me.onRemove,
-            scope: me
-        }];
+        return [
+            {
+                text: _('Install'),
+                iconCls: 'x-fa fa-download',
+                handler: me.onInstall,
+                scope: me
+            },
+            {
+                text: _('Open Web Interface'),
+                iconCls: 'x-fa fa-external-link',
+                handler: me.onOpenWebInterface,
+                scope: me
+            },
+            {
+                text: _('Restart'),
+                iconCls: 'x-fa fa-sync',
+                handler: me.onRestart,
+                scope: me
+            },
+            {
+                text: _('View Logs'),
+                iconCls: 'x-fa fa-file-text',
+                handler: me.onViewLogs,
+                scope: me
+            },
+            {
+                text: _('Remove'),
+                iconCls: 'x-fa fa-trash',
+                handler: me.onRemove,
+                scope: me
+            }
+        ];
     },
 
     onInstall: function () {
@@ -70,15 +81,21 @@ Ext.define('OMV.module.admin.service.Immich', {
         );
     },
 
-    onRemove: function() {
+    onRemove: function () {
         var me = this;
         OMV.MessageBox.show({
             title: _('Confirmation'),
-            msg: _('Are you sure you want to remove Immich? This will delete all data.'),
+            msg: _(
+                'Are you sure you want to remove Immich? This will delete all data.'
+            ),
             buttons: Ext.Msg.YESNO,
-            fn: function(answer) {
+            fn: function (answer) {
                 if (answer === 'yes') {
-                    me.doAjax('remove', _('Removing Immich...'), _('Immich stack removed.'));
+                    me.doAjax(
+                        'remove',
+                        _('Removing Immich...'),
+                        _('Immich stack removed.')
+                    );
                 }
             },
             scope: me,
@@ -86,22 +103,26 @@ Ext.define('OMV.module.admin.service.Immich', {
         });
     },
 
-    onRestart: function() {
-        this.doAjax('restart', _('Restarting Immich...'), _('Immich restarted.'));
+    onRestart: function () {
+        this.doAjax(
+            'restart',
+            _('Restarting Immich...'),
+            _('Immich restarted.')
+        );
     },
 
-    onOpenWebInterface: function() {
+    onOpenWebInterface: function () {
         var url = 'http://' + window.location.hostname + ':2285';
         window.open(url, '_blank');
     },
 
-    onViewLogs: function() {
+    onViewLogs: function () {
         var me = this;
         me.setLoading(true);
-        
+
         OMV.Rpc.request({
             scope: me,
-            callback: function(id, success, response) {
+            callback: function (id, success, response) {
                 me.setLoading(false);
                 if (success) {
                     me.showLogsWindow(response.logs, response.error);
@@ -116,7 +137,7 @@ Ext.define('OMV.module.admin.service.Immich', {
         });
     },
 
-    showLogsWindow: function(logs, error) {
+    showLogsWindow: function (logs, error) {
         var me = this;
         var logText = logs || _('No logs available');
         if (error) {
@@ -129,28 +150,33 @@ Ext.define('OMV.module.admin.service.Immich', {
             height: 600,
             layout: 'fit',
             modal: true,
-            items: [{
-                xtype: 'textarea',
-                value: logText,
-                readOnly: true,
-                style: {
-                    fontFamily: 'monospace',
-                    fontSize: '12px'
+            items: [
+                {
+                    xtype: 'textarea',
+                    value: logText,
+                    readOnly: true,
+                    style: {
+                        fontFamily: 'monospace',
+                        fontSize: '12px'
+                    }
                 }
-            }],
-            buttons: [{
-                text: _('Refresh'),
-                handler: function() {
-                    this.up('window').close();
-                    me.onViewLogs();
+            ],
+            buttons: [
+                {
+                    text: _('Refresh'),
+                    handler: function () {
+                        this.up('window').close();
+                        me.onViewLogs();
+                    },
+                    scope: this
                 },
-                scope: this
-            }, {
-                text: _('Close'),
-                handler: function() {
-                    this.up('window').close();
+                {
+                    text: _('Close'),
+                    handler: function () {
+                        this.up('window').close();
+                    }
                 }
-            }]
+            ]
         }).show();
     }
 });
