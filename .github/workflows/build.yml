@@ -114,6 +114,8 @@ jobs:
             name: github-pages
             url: ${{ steps.deployment.outputs.page_url }}
         steps:
+            - uses: actions/checkout@v4
+
             - uses: actions/download-artifact@v4
               with:
                   path: dist
@@ -158,29 +160,68 @@ jobs:
                   OWNER="${GITHUB_REPOSITORY%%/*}"
                   REPO_NAME="${GITHUB_REPOSITORY#*/}"
                   SITE_URL="https://${OWNER}.github.io/${REPO_NAME}"
-                  cat > index.html <<HTML
-                  <!DOCTYPE html>
-                  <html lang="en">
-                  <head>
-                      <meta charset="utf-8" />
-                      <title>OpenMediaVault Plugins APT Repository</title>
-                      <style>
-                          body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 48rem; line-height: 1.5; color: #111; }
-                          code { background: #f5f5f5; padding: 0.1rem 0.35rem; border-radius: 0.25rem; }
-                          pre { background: #f5f5f5; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
-                          h1 { font-size: 2rem; }
-                      </style>
-                  </head>
-                  <body>
-                      <h1>OpenMediaVault Plugins APT Repository</h1>
-                      <p>The Debian packages produced from <code>${GITHUB_REPOSITORY}</code> are published here.</p>
-                      <p>Add the repository to your system by running:</p>
-                      <pre><code>echo "deb [trusted=yes] ${SITE_URL} stable main" | sudo tee /etc/apt/sources.list.d/openmediavault-plugins.list
-                      sudo apt update</code></pre>
-                      <p>Packages are unsigned; use <code>[trusted=yes]</code> or provide your own signing workflow if required.</p>
-                  </body>
-                  </html>
-                  HTML
+                  BUILD_DATE=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+                  # Generate plugin cards from available packages
+                  PLUGIN_CARDS=""
+                  for deb in pool/main/*/*.deb; do
+                      if [ -f "$deb" ]; then
+                          PKG_NAME=$(dpkg-deb --field "$deb" Package)
+                          PKG_VERSION=$(dpkg-deb --field "$deb" Version)
+                          PKG_DESC=$(dpkg-deb --field "$deb" Description | head -n1)
+
+                          # Extract plugin name (remove openmediavault- prefix)
+                          PLUGIN_NAME=${PKG_NAME#openmediavault-}
+
+                          # Determine service description based on plugin name
+                          case "$PLUGIN_NAME" in
+                              "immich") SERVICE_DESC="Self-hosted photo and video management solution" ;;
+                              "gitea") SERVICE_DESC="Self-hosted Git service with web interface" ;;
+                              "drone") SERVICE_DESC="Continuous integration platform" ;;
+                              "storecli") SERVICE_DESC="StoreCLI monitoring and management tool" ;;
+                              *) SERVICE_DESC="$PKG_DESC" ;;
+                          esac
+
+                          PLUGIN_CARDS="${PLUGIN_CARDS}
+                          <div class=\"plugin-card\">
+                              <div class=\"plugin-name\">${PLUGIN_NAME^}</div>
+                              <div class=\"plugin-version\">v${PKG_VERSION}</div>
+                              <div class=\"plugin-description\">${SERVICE_DESC}</div>
+                              <div class=\"install-command\">sudo apt install ${PKG_NAME}</div>
+                          </div>"
+                      fi
+                  done
+
+                  # Use the enhanced template
+                  cp ../docs-template.html index.html
+
+                  # Create temporary files for replacement to handle multiline content
+                  printf '%s\n' "$PLUGIN_CARDS" > /tmp/plugin_cards.tmp
+
+                  # Replace placeholders with actual values using proper escaping
+                  sed -i "s|__GITHUB_REPOSITORY__|${GITHUB_REPOSITORY}|g" index.html
+                  sed -i "s|__SITE_URL__|${SITE_URL}|g" index.html
+                  sed -i "s|__BUILD_DATE__|${BUILD_DATE}|g" index.html
+
+                  # Use a more robust method for multiline replacement
+                  python3 << 'EOF'
+
+
+                  # Read the HTML file
+                  with open('index.html', 'r') as f:
+                      content = f.read()
+
+                  # Read the plugin cards
+                  with open('/tmp/plugin_cards.tmp', 'r') as f:
+                      plugin_cards = f.read().strip()
+
+                  # Replace the placeholder
+                  content = content.replace('__PLUGIN_CARDS__', plugin_cards)
+
+                  # Write back
+                  with open('index.html', 'w') as f:
+                      f.write(content)
+                  EOF
                   popd
 
             - name: Upload GitHub Pages artifact
