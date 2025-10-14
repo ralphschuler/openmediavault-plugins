@@ -1,9 +1,9 @@
 version: '1.0'
 metadata:
-    title: Gitea
-    description: Manage the Gitea self-hosted Git service.
-    icon: gitea
+  title: Gitea
+  description: Manage the Gitea self-hosted Git service.
+  icon: gitea
 component:
-    name: omv-service-gitea
-    type: form
-    jsClass: OMV.module.admin.service.Gitea
+  name: omv-service-gitea
+  type: form
+  jsClass: OMV.module.admin.service.Gitea

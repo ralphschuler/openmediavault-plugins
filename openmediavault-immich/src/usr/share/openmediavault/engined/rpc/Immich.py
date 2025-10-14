@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Immich RPC service for OpenMediaVault."""
 
-import sys
 import os
+import sys
 
 # Add the common module path to sys.path if it exists
 common_path = "/usr/share/openmediavault/engined/rpc"
@@ -16,6 +16,7 @@ except ImportError:
     import logging
     import subprocess
     from typing import Any, Dict
+
     from openmediavault import rpc
     from openmediavault.procenv import ProcessEnvironment
 

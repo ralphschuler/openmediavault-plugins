@@ -14,7 +14,6 @@ Ext.define('OMV.module.admin.service.Drone', {
     },
 
     getFormItems: function () {
-        var me = this;
         return [
             {
                 xtype: 'fieldset',

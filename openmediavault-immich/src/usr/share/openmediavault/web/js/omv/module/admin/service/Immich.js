@@ -14,7 +14,6 @@ Ext.define('OMV.module.admin.service.Immich', {
     },
 
     getFormItems: function () {
-        var me = this;
         return [
             {
                 xtype: 'fieldset',
