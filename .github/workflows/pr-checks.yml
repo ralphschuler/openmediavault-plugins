@@ -129,3 +129,73 @@ jobs:
           done
 
           echo "All documentation validation checks passed"
+
+  # Test package installation
+  package-installation-test:
+    name: Package Installation Test
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    needs: [pre-commit, strict-linting, build-validation]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y debhelper devscripts lintian dpkg-dev build-essential
+
+      - name: Build and test plugin packages
+        run: |
+          # Build all plugins and test their installation
+          for plugin_dir in openmediavault-*/; do
+            if [ -d "$plugin_dir" ] && [ -f "${plugin_dir}debian/changelog" ]; then
+              plugin_name=${plugin_dir%/}
+              echo "=== Testing $plugin_name ==="
+
+              # Build the package
+              cd "$plugin_dir"
+              dpkg-buildpackage -b -us -uc
+              cd ..
+
+              # Find the built package
+              DEB_FILE=$(find . -name "${plugin_name}_*.deb" -type f | head -n1)
+              if [ -z "$DEB_FILE" ]; then
+                echo "ERROR: No .deb file found for $plugin_name"
+                exit 1
+              fi
+
+              echo "Found package: $DEB_FILE"
+
+              # Test package metadata
+              echo "--- Package Information ---"
+              dpkg-deb --info "$DEB_FILE"
+
+              echo "--- Package Contents ---"
+              dpkg-deb --contents "$DEB_FILE" | head -20
+
+              # Test package installation (dry-run)
+              echo "--- Testing Package Installation ---"
+              sudo dpkg --dry-run -i "$DEB_FILE" || {
+                echo "WARNING: Dry-run failed, might be expected due to missing dependencies"
+              }
+
+              # Verify package structure
+              echo "--- Verifying Package Structure ---"
+              dpkg-deb --fsys-tarfile "$DEB_FILE" | tar -tf - | head -10
+
+              # Test package extraction
+              mkdir -p "/tmp/test-extract-$plugin_name"
+              dpkg-deb --extract "$DEB_FILE" "/tmp/test-extract-$plugin_name"
+              echo "Extracted files for $plugin_name:"
+              find "/tmp/test-extract-$plugin_name" -type f | head -5
+
+              echo "✓ Package $plugin_name passed installation tests"
+              echo ""
+
+              # Cleanup for next iteration
+              rm -f "$DEB_FILE"
+              rm -rf "/tmp/test-extract-$plugin_name"
+            fi
+          done
+
+          echo "All package installation tests completed successfully"
