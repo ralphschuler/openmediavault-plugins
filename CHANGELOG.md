@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This changelog tracks changes at the monorepo level. Individual plugin changes are maintained in their respective `debian/changelog` files:
 
 - `openmediavault-immich/debian/changelog`
-- `openmediavault-gitea/debian/changelog` 
+- `openmediavault-gitea/debian/changelog`
 - `openmediavault-drone/debian/changelog`
 
 ### Plugin Release Process
@@ -79,7 +79,7 @@ When plugins are released, the following information is tracked:
 ### Added
 - New features and functionality
 
-### Changed  
+### Changed
 - Modifications to existing features
 - Configuration changes
 - UI improvements
@@ -102,7 +102,7 @@ When plugins are released, the following information is tracked:
 Repository-level changes include:
 
 - **Infrastructure**: CI/CD, build systems, development tools
-- **Documentation**: README updates, new guides, policy changes  
+- **Documentation**: README updates, new guides, policy changes
 - **Community**: Contributor guides, issue templates, governance
 - **Shared Components**: Updates to `common/` base classes
 
@@ -130,7 +130,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
 
 - Development setup and workflow
 - Code style guidelines and linting
-- Testing procedures and requirements  
+- Testing procedures and requirements
 - Pull request and review process
 - Plugin development standards
 
@@ -148,7 +148,7 @@ See [SECURITY.md](SECURITY.md) for:
 This project is community-driven and welcomes contributions:
 
 - **Issues**: Bug reports and feature requests via GitHub Issues
-- **Discussions**: Community discussions via GitHub Discussions  
+- **Discussions**: Community discussions via GitHub Discussions
 - **Pull Requests**: Code contributions via GitHub Pull Requests
 - **Documentation**: Improvements to guides and README files
 

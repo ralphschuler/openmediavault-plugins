@@ -97,7 +97,7 @@ class BaseDockerService(rpc.Service):
             cmd = ["docker", "compose", "logs", "--tail=100"]
             if service:
                 cmd.append(service)
-            
+
             result = subprocess.run(
                 cmd,
                 check=False,

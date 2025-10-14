@@ -144,7 +144,7 @@ When contributing to this project, please follow these security guidelines:
 ### If You're Affected by a Vulnerability
 
 1. **Check for security advisories** on the GitHub repository
-2. **Update immediately** when patches are available  
+2. **Update immediately** when patches are available
 3. **Review logs** for signs of exploitation
 4. **Consider temporary mitigations** if patches aren't available
 5. **Report any evidence of exploitation** to maintainers

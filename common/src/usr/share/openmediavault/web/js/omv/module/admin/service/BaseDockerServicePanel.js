@@ -72,7 +72,7 @@ Ext.define('OMV.module.admin.service.BaseDockerServicePanel', {
 
     onInstall: function() {
         var me = this;
-        me.doAjax('install', 
+        me.doAjax('install',
             Ext.String.format(_('Installing {0}...'), me.serviceName),
             Ext.String.format(_('{0} has been installed.'), me.serviceName)
         );
@@ -113,10 +113,10 @@ Ext.define('OMV.module.admin.service.BaseDockerServicePanel', {
 
     onViewLogs: function() {
         var me = this;
-        
+
         // Show loading mask
         me.setLoading(true);
-        
+
         // Call the RPC method to get logs
         OMV.Rpc.request({
             scope: me,
@@ -137,7 +137,7 @@ Ext.define('OMV.module.admin.service.BaseDockerServicePanel', {
 
     showLogsWindow: function(logs, error) {
         var me = this;
-        
+
         var logText = logs || _('No logs available');
         if (error) {
             logText = _('Error retrieving logs: ') + error;

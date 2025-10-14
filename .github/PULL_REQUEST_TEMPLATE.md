@@ -30,16 +30,16 @@ Check all that apply:
 ## Changes Made
 
 ### Added
-- 
+-
 
 ### Changed
-- 
+-
 
 ### Removed
-- 
+-
 
 ### Fixed
-- 
+-
 
 ## Testing
 
@@ -56,18 +56,18 @@ Check all that apply:
 
 ### Test Environment
 
-- **OpenMediaVault version**: 
+- **OpenMediaVault version**:
 - **System**: (e.g., Debian 12, x86_64)
-- **Docker version**: 
-- **Browser** (if UI changes): 
+- **Docker version**:
+- **Browser** (if UI changes):
 
 ### Test Cases
 
 Describe specific test scenarios you performed:
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Screenshots (if applicable)
 

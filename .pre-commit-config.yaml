@@ -1,0 +1,71 @@
+repos:
+    # Use local tools for Python formatting and linting
+    - repo: local
+      hooks:
+          - id: black
+            name: black (Python formatter)
+            entry: black
+            language: system
+            files: ^(scripts/.*\.py|openmediavault-.*/src/usr/share/openmediavault/engined/rpc/.*\.py)$
+
+          - id: isort
+            name: isort (Python import sorter)
+            entry: isort
+            language: system
+            files: ^(scripts/.*\.py|openmediavault-.*/src/usr/share/openmediavault/engined/rpc/.*\.py)$
+
+          - id: flake8
+            name: flake8 (Python linter)
+            entry: flake8
+            language: system
+            files: ^(scripts/.*\.py|openmediavault-.*/src/usr/share/openmediavault/engined/rpc/.*\.py)$
+
+          - id: eslint
+            name: eslint (JavaScript linter)
+            entry: bash -c 'npx eslint --max-warnings 0 "$@"'
+            language: system
+            files: ^openmediavault-.*/src/.*\.js$
+
+          - id: prettier-js
+            name: prettier (JavaScript formatter)
+            entry: bash -c 'npx prettier --write "$@"'
+            language: system
+            files: ^openmediavault-.*/src/.*\.js$
+
+          - id: shellcheck
+            name: shellcheck (Shell linter)
+            entry: shellcheck
+            language: system
+            files: ^openmediavault-.*/(.*\.sh|.*mkconf|.*postinst|.*prerm)$
+            types: [shell]
+
+          # Note: YAML formatting only applies to plugin-specific files
+          # Legacy workflow and template files are excluded to avoid conflicts
+          - id: prettier-yaml
+            name: prettier (YAML formatter)
+            entry: bash -c 'npx prettier --write "$@"'
+            language: system
+            files: ^openmediavault-.*/src/.*\.(yml|yaml)$
+
+          # Note: YAML linting applies only to new/maintained files
+          # Legacy files excluded until they can be properly reformatted
+          - id: yamllint
+            name: yamllint (YAML linter)
+            entry: yamllint
+            language: system
+            args: [-c=.yamllint.yml]
+            files: ^openmediavault-.*/src/.*\.(yml|yaml)$
+
+    # Basic file cleanup
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.5.0
+      hooks:
+          - id: trailing-whitespace
+            exclude: ^.*\.patch$
+          - id: end-of-file-fixer
+            exclude: ^.*\.patch$
+          - id: check-yaml
+          - id: check-json
+          - id: check-merge-conflict
+          - id: mixed-line-ending
+            args: [--fix=lf]

@@ -6,7 +6,7 @@ This document provides guidelines for AI coding agents working on the OpenMediaV
 
 This monorepo contains multiple OpenMediaVault 7 plugins for Docker-based services. Each plugin provides:
 - Web UI integration within OpenMediaVault
-- Docker Compose service management 
+- Docker Compose service management
 - Debian package creation for distribution
 - Comprehensive documentation and testing
 
@@ -14,7 +14,7 @@ This monorepo contains multiple OpenMediaVault 7 plugins for Docker-based servic
 
 ### Code Quality Assurance
 - **Always run linting before committing**: `npm run lint`
-- **Apply consistent formatting**: `npm run format`  
+- **Apply consistent formatting**: `npm run format`
 - **Follow established patterns** from existing plugins
 - **Validate changes** through testing and manual verification
 
@@ -26,7 +26,7 @@ Ensure new plugins follow the standard structure:
 openmediavault-<service>/
 ├── debian/                    # Packaging metadata
 │   ├── changelog             # Version history (Semantic Versioning)
-│   ├── control              # Package dependencies and description  
+│   ├── control              # Package dependencies and description
 │   └── install              # File installation mapping
 ├── src/                      # Source files for target system
 │   ├── usr/share/openmediavault/engined/rpc/     # Python RPC service
@@ -45,7 +45,7 @@ openmediavault-<service>/
 - Located in: `src/usr/share/openmediavault/engined/rpc/`
 
 **JavaScript Web UI** (`*.js`):
-- Extend `BaseDockerServicePanel` when available  
+- Extend `BaseDockerServicePanel` when available
 - Implement consistent button layouts: Install, Remove, Restart, Open Web Interface, View Logs
 - Add confirmation dialogs for destructive operations
 - Provide user feedback for all actions
@@ -73,7 +73,7 @@ Before finalizing any changes:
 # Lint all code
 npm run lint
 
-# Format all code  
+# Format all code
 npm run format
 
 # Verify no unintended changes
@@ -110,7 +110,7 @@ from BaseDockerService import BaseDockerService
 
 class ServiceExample(BaseDockerService):
     name = "Example"
-    mkconf_script = "/usr/share/openmediavault/mkconf/example" 
+    mkconf_script = "/usr/share/openmediavault/mkconf/example"
     compose_name = "example"
 ```
 
@@ -126,7 +126,7 @@ Ext.define("OMV.module.admin.service.example.Example", {
 #### ❌ Avoid These Anti-Patterns
 
 - **Don't hardcode secrets** in configuration files
-- **Don't skip error handling** for Docker operations  
+- **Don't skip error handling** for Docker operations
 - **Don't duplicate code** - use base classes from `common/`
 - **Don't modify existing working plugins** unless necessary for the task
 - **Don't skip linting and formatting** checks
@@ -140,7 +140,7 @@ Ext.define("OMV.module.admin.service.example.Example", {
 - Shared components in `common/` benefit all plugins
 - Cross-plugin dependencies should be minimized
 
-#### Backward Compatibility  
+#### Backward Compatibility
 - Base classes in `common/` are designed to be optional
 - Plugins should work with or without common module installed
 - Always provide fallback implementations
@@ -166,7 +166,7 @@ When working on tasks:
 3. **Document completion status** for each checklist item
 4. **Validate changes** before marking tasks complete
 
-### Issue Resolution  
+### Issue Resolution
 When encountering problems:
 1. **Check existing implementations** for reference patterns
 2. **Consult documentation** in README files and comments
@@ -176,7 +176,7 @@ When encountering problems:
 ### Code Review Readiness
 Ensure all changes are ready for human review:
 - All linting passes without errors
-- Formatting is consistent across all files  
+- Formatting is consistent across all files
 - Functionality has been manually verified
 - Documentation is updated appropriately
 - No unintended side effects have been introduced

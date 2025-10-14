@@ -35,10 +35,13 @@ You can then install any plugin directly via `apt install openmediavault-<plugin
 
 ## Development workflow
 
-1. Make changes in the relevant `openmediavault-<plugin>` directory.
-2. Update the plugin's `debian/changelog` entry with a new [Semantic Versioning](https://semver.org/) number when behaviour changes.
-3. **Run linting and formatting** (see Code Quality section below).
-4. Commit the changes and open a pull request.
+1. **Setup pre-commit hooks** (REQUIRED for all contributors): `npm run precommit:install`
+2. Make changes in the relevant `openmediavault-<plugin>` directory.
+3. Update the plugin's `debian/changelog` entry with a new [Semantic Versioning](https://semver.org/) number when behaviour changes.
+4. **Ensure strict linting compliance** (see Code Quality section below).
+5. Commit the changes (pre-commit hooks will run automatically) and open a pull request.
+
+**IMPORTANT**: Our CI system enforces **strict code quality requirements**. PRs with any linting warnings or errors will be automatically rejected. Pre-commit hooks help catch issues early.
 
 The GitHub Actions workflow automatically detects which plugins changed and only builds those Debian packages for pull requests and pushes to `main`.
 
@@ -74,7 +77,7 @@ npm run lint
 # Individual tools
 npm run lint:python    # Black, isort, flake8
 npm run lint:js        # ESLint
-npm run lint:shell     # ShellCheck  
+npm run lint:shell     # ShellCheck
 npm run lint:yaml      # yamllint
 
 # Manual commands
@@ -88,7 +91,7 @@ Apply formatting:
 # All files
 npm run format
 
-# Individual tools  
+# Individual tools
 npm run format:python  # Black + isort
 npm run format:js      # Prettier for JS
 npm run format:yaml    # Prettier for YAML
@@ -100,16 +103,34 @@ prettier --write **/*.{js,yml,yaml}
 
 #### Automated Workflows
 
-- **`lint.yml`**: Runs on every PR and push to `main`, validates all file types
+- **`lint.yml`**: Runs on every PR and push to `main`, validates all file types with **strict enforcement**
+- **`pr-checks.yml`**: **STRICT PR validation** - enforces zero warnings/errors, pre-commit compliance
 - **`format.yml`**: Manual workflow for auto-formatting code (use "Run workflow" button)
+
+#### Pre-commit Hooks
+
+Pre-commit hooks are **mandatory** for all contributors:
+
+```bash
+# Install pre-commit hooks (one-time setup)
+npm run precommit:install
+
+# Hooks automatically run on git commit and will:
+# - Format Python code with Black and isort
+# - Format JavaScript with Prettier
+# - Format YAML files with Prettier
+# - Lint all code and prevent commits with errors
+# - Clean up trailing whitespace and line endings
+```
 
 ### Configuration Files
 
 - `pyproject.toml` - Python tools configuration
-- `eslint.config.js` - JavaScript linting rules  
+- `eslint.config.js` - JavaScript linting rules
 - `.prettierrc.json` - JavaScript/YAML formatting
 - `.yamllint.yml` - YAML linting rules
 - `.editorconfig` - Universal editor settings
+- `.pre-commit-config.yaml` - Pre-commit hooks configuration
 
 ## Releasing
 
@@ -122,7 +143,7 @@ To trigger a manual release bump, edit the appropriate `debian/changelog` files 
 This project welcomes contributions! Please see our community guidelines:
 
 - **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to the project
-- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community standards and behavior expectations  
+- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community standards and behavior expectations
 - **[Security Policy](SECURITY.md)** - How to report security vulnerabilities
 - **[Changelog](CHANGELOG.md)** - Project history and notable changes
 - **[AI Agents Guide](AGENTS.md)** - Guidelines for AI coding agents

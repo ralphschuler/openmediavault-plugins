@@ -124,7 +124,7 @@ GitHub Actions automatically:
 When implementing new plugins, follow these established patterns:
 
 1. **RPC Service Structure**: Inherit from `BaseDockerService` for consistent API
-2. **Web UI Components**: Extend `BaseDockerServicePanel` for uniform interface  
+2. **Web UI Components**: Extend `BaseDockerServicePanel` for uniform interface
 3. **Shell Script Operations**: Follow existing mkconf script patterns
 4. **Docker Compose Setup**: Use standard environment and compose file structure
 5. **Error Handling**: Implement comprehensive requirement checks and clear messaging

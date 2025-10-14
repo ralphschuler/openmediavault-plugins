@@ -1,16 +1,16 @@
 name: Build & Release OMV Plugins
 
-on:
-    pull_request:
-    push:
-        branches:
-            - main
-    workflow_dispatch:
+'on':
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
-    contents: write
-    pages: write
-    id-token: write
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
     prepare:
