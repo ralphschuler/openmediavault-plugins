@@ -1,0 +1,110 @@
+version: '1.0'
+type: component
+data:
+    name: omv-services-immich-form-page
+    type: formPage
+    config:
+        request:
+            service: Immich
+            get:
+                method: get
+            post:
+                method: set
+        hints:
+            - type: info
+              text: _("The install action generates a Docker Compose stack under the configured data directory. Review the generated .env file before exposing the service on the network.")
+              dismissible: true
+              stateId: 5317b3e9-f528-4dd0-9fd7-93275f1cff6a
+        fields:
+            - type: checkbox
+              name: enable
+              label: _("Enabled")
+              value: false
+            - type: textInput
+              name: composepath
+              label: _("Data directory")
+              hint: _("Location where the compose file, media library, and database are stored.")
+              value: '/srv/dev-disk-by-label-data/immich'
+              validators:
+                  required: true
+            - type: textInput
+              name: timezone
+              label: _("Timezone")
+              hint: _("Leave empty to inherit the system timezone.")
+              value: ''
+            - type: numberInput
+              name: serverport
+              label: _("Server port")
+              hint: _("Immich API port exposed on the host.")
+              validators:
+                  min: 1
+                  max: 65535
+                  required: true
+              value: 2283
+            - type: numberInput
+              name: webport
+              label: _("Web UI port")
+              hint: _("Port that serves the web interface.")
+              validators:
+                  min: 1
+                  max: 65535
+                  required: true
+              value: 2285
+        buttons:
+            - template: submit
+            - template: cancel
+              execute:
+                  type: url
+                  url: '/services'
+            - text: _("Install stack")
+              enabledConstraint:
+                  operator: truthy
+                  arg0:
+                      prop: enable
+              execute:
+                  type: rpc
+                  request:
+                      service: Immich
+                      method: install
+              successNotificationTitle: _("Immich stack installation triggered.")
+            - text: _("Restart")
+              enabledConstraint:
+                  operator: truthy
+                  arg0:
+                      prop: enable
+              execute:
+                  type: rpc
+                  request:
+                      service: Immich
+                      method: restart
+              successNotificationTitle: _("Immich stack restart initiated.")
+            - text: _("Remove stack")
+              execute:
+                  type: rpc
+                  request:
+                      service: Immich
+                      method: remove
+              confirm:
+                  title: _("Remove Immich stack")
+                  text: _("This stops the containers but keeps data on disk. Continue?")
+              successNotificationTitle: _("Immich stack removal triggered.")
+            - text: _("Show status")
+              execute:
+                  type: rpc
+                  request:
+                      service: Immich
+                      method: status
+              dialog:
+                  title: _("Immich stack status")
+                  type: text
+                  valueField: stdout
+            - text: _("Show logs")
+              execute:
+                  type: rpc
+                  request:
+                      service: Immich
+                      method: logs
+              dialog:
+                  title: _("Recent Immich logs")
+                  type: text
+                  valueField: stdout

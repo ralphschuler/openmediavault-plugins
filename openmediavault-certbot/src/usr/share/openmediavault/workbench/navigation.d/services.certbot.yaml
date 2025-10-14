@@ -1,0 +1,7 @@
+version: '1.0'
+type: navigation-item
+data:
+    path: 'services.certbot'
+    text: _("Certbot")
+    icon: 'mdi:certificate'
+    url: '/services/certbot'

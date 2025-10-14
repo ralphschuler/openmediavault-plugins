@@ -1,72 +1,64 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-ACTION="${1:-}"
-shift || true
+SERVICE="storecli"
 
-error() {
-    echo "[storecli] $1" >&2
+. /usr/share/openmediavault/scripts/helper-functions
+
+config_get() {
+        omv_config_get "/config/services/${SERVICE}/$1"
 }
 
-find_binary() {
-    local candidate
-    for candidate in storecli storecli64 storcli storcli64; do
-        if command -v "$candidate" >/dev/null 2>&1; then
-            command -v "$candidate"
-            return 0
+resolve_binary() {
+        local primary fallback
+        primary="$(config_get binary)"
+        fallback="$(config_get fallback)"
+        if command -v "$primary" >/dev/null 2>&1; then
+                printf '%s' "$(command -v "$primary")"
+                return 0
         fi
-    done
-    return 1
-}
-
-BINARY=""
-if BINARY=$(find_binary); then
-    :
-else
-    BINARY=""
-fi
-
-require_binary() {
-    if [[ -z "$BINARY" ]]; then
-        error "No storecli/storcli binary found in PATH."
-        error "Install Broadcom's StoreCLI utilities and retry."
-        exit 2
-    fi
-}
-
-case "$ACTION" in
-    status)
-        require_binary
-        exec "$BINARY" show summary
-        ;;
-    version)
-        require_binary
-        exec "$BINARY" -v
-        ;;
-    show)
-        require_binary
-        TARGET="${1:-/call}"
-        shift || true
-        if [[ ! "$TARGET" =~ ^/(c[0-9]+|call|all)$ ]]; then
-            error "Invalid controller selector: $TARGET"
-            exit 1
+        if command -v "$fallback" >/dev/null 2>&1; then
+                printf '%s' "$(command -v "$fallback")"
+                return 0
         fi
-        exec "$BINARY" "$TARGET" "$@"
-        ;;
-    cleanup)
-        # Nothing to clean up yet; placeholder for future enhancements.
-        exit 0
-        ;;
-    *)
-        cat >&2 <<USAGE
-Usage: $0 <action>
-
-Actions:
-  status             Show overall controller summary.
-  version            Print StoreCLI version information.
-  show <target> ...  Run a read-only show command (e.g. /c0 show all).
-  cleanup            Placeholder invoked during package removal.
-USAGE
+        echo "storecli: no compatible binary found" >&2
         exit 1
-        ;;
-esac
+}
+
+run_command() {
+        local bin
+        bin="$(resolve_binary)"
+        "$bin" "$@"
+}
+
+status_cmd() {
+        run_command "/call" "show"
+}
+
+events_cmd() {
+        run_command "/call" "show" "events"
+}
+
+usage() {
+        cat <<EOF_USAGE
+Usage: $0 <status|events>
+EOF_USAGE
+}
+
+main() {
+        local action="${1:-status}"
+        case "$action" in
+                status)
+                        status_cmd
+                        ;;
+                events)
+                        events_cmd
+                        ;;
+                *)
+                        usage >&2
+                        exit 1
+                        ;;
+        esac
+}
+
+main "$@"

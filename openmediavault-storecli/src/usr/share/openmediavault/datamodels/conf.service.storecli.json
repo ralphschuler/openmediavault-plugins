@@ -1,0 +1,25 @@
+{
+        "type": "config",
+        "id": "conf.service.storecli",
+        "title": "StoreCLI",
+        "queryinfo": {
+                "xpath": ".//services/storecli",
+                "iterable": false
+        },
+        "properties": {
+                "enable": {
+                        "type": "boolean",
+                        "default": false
+                },
+                "binary": {
+                        "type": "string",
+                        "default": "storecli64",
+                        "maxLength": 255
+                },
+                "fallback": {
+                        "type": "string",
+                        "default": "storcli64",
+                        "maxLength": 255
+                }
+        }
+}

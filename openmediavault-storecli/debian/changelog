@@ -1,3 +1,9 @@
+openmediavault-storecli (0.2.0) stable; urgency=medium
+
+  * Add RPC surface, Workbench UI, and helper scripts for storecli tooling.
+
+ -- Inhaus AI <dev@inhaus.ai>  Tue, 11 Feb 2025 00:00:00 +0000
+
 openmediavault-storecli (0.1.0) stable; urgency=medium
 
   * Initial release providing StoreCLI RAID integration for OpenMediaVault.

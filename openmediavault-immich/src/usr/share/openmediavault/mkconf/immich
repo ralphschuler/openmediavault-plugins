@@ -1,191 +1,200 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-ACTION="${1:-}"
-STACK_DIR="/srv/dev-disk-by-label-data/immich"
-COMPOSE_FILE="${STACK_DIR}/docker-compose.yml"
-ENV_FILE="${STACK_DIR}/.env"
+SERVICE="immich"
+LOG_TAG="immich"
 
-error() {
-    echo "[immich] $1" >&2
+. /usr/share/openmediavault/scripts/helper-functions
+
+config_get() {
+        local key="$1"
+        omv_config_get "/config/services/${SERVICE}/${key}"
 }
 
-ensure_requirements() {
-    if ! command -v docker >/dev/null 2>&1; then
-        error "Docker is required but not installed."
-        error "Please install Docker first: apt update && apt install -y docker.io"
-        exit 1
-    fi
-    if ! docker compose version >/dev/null 2>&1; then
-        error "The Docker Compose plugin is required but not installed."
-        error "Please install Docker Compose plugin: apt update && apt install -y docker-compose-plugin"
-        exit 1
-    fi
-    if ! systemctl is-active --quiet docker; then
-        error "Docker service is not running."
-        error "Please start Docker service: systemctl start docker"
-        exit 1
-    fi
+log_info() {
+        local message="$1"
+        omv_log "$LOG_TAG" "$message"
 }
 
-write_env_file() {
-    cat >"${ENV_FILE}" <<EOT
+require_command() {
+        local cmd="$1"
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+                echo "${SERVICE}: missing dependency "$cmd"" >&2
+                exit 1
+        fi
+}
+
+generate_secret() {
+        tr -dc 'A-Za-z0-9' </dev/urandom | head -c "${1:-32}"
+}
+
+compose_dir() {
+        local path
+        path="$(config_get composepath)"
+        if [ -z "$path" ]; then
+                path="/srv/dev-disk-by-label-data/${SERVICE}"
+        fi
+        printf '%s' "$path"
+}
+
+ensure_env_file() {
+        local dir="$1"
+        local env_file="$dir/.env"
+        if [ -f "$env_file" ]; then
+                return 0
+        fi
+
+        mkdir -p "$dir"
+        local tz
+        tz="$(config_get timezone)"
+        if [ -z "$tz" ] && [ -f /etc/timezone ]; then
+                tz="$(cat /etc/timezone)"
+        fi
+        if [ -z "$tz" ]; then
+                tz="UTC"
+        fi
+
+        local db_password
+        db_password="$(generate_secret 32)"
+
+        cat >"$env_file" <<EOF_ENV
+TZ=${tz}
 IMMICH_VERSION=release
-POSTGRES_PASSWORD=immich
-POSTGRES_USER=immich
-POSTGRES_DB=immich
-REDIS_PASSWORD=immich
-UPLOAD_LOCATION=${STACK_DIR}/library
-TZ=UTC
-EOT
+UPLOAD_LOCATION=${dir}/library
+DB_DATA_LOCATION=${dir}/postgres
+DB_USERNAME=immich
+DB_PASSWORD=${db_password}
+DB_DATABASE_NAME=immich
+EOF_ENV
+        chmod 600 "$env_file"
+        log_info "Created default environment file at $env_file"
 }
 
-write_compose_file() {
-    cat >"${COMPOSE_FILE}" <<'EOT'
+write_compose() {
+        local dir="$1"
+        local compose_file="$dir/docker-compose.yml"
+        local server_port web_port
+        server_port="$(config_get serverport)"
+        web_port="$(config_get webport)"
+        cat >"$compose_file" <<EOF_YAML
+name: ${SERVICE}
+
 services:
   immich-server:
-    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION}
-    restart: unless-stopped
-    depends_on:
-      - immich-db
-      - immich-redis
-      - immich-typesense
-    environment:
-      DB_HOST: immich-db
-      DB_PORT: "5432"
-      DB_USERNAME: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_DATABASE_NAME: ${POSTGRES_DB}
-      REDIS_HOSTNAME: immich-redis
-      REDIS_PORT: "6379"
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      IMMICH_PORT: "2283"
-      TZ: ${TZ}
-    ports:
-      - "2283:2283"
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    env_file:
+      - .env
     volumes:
-      - ${UPLOAD_LOCATION}:/usr/src/app/upload
-    healthcheck:
-      test: ["CMD", "node", "/usr/src/app/dist/apps/immich/server/main.js", "healthcheck"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-
-  immich-web:
-    image: ghcr.io/immich-app/immich-web:${IMMICH_VERSION}
-    restart: unless-stopped
-    depends_on:
-      - immich-server
-    environment:
-      IMMICH_SERVER_URL_EXTERNAL: http://localhost:2283
-      TZ: ${TZ}
+      - ${UPLOAD_LOCATION}:/data
+      - /etc/localtime:/etc/localtime:ro
     ports:
-      - "2285:3000"
-
-  immich-microservices:
-    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION}
-    command: ["./start-microservices.sh"]
-    restart: unless-stopped
+      - "${server_port}:2283"
+      - "${web_port}:3001"
     depends_on:
-      - immich-db
-      - immich-redis
-      - immich-typesense
-    environment:
-      DB_HOST: immich-db
-      DB_PORT: "5432"
-      DB_USERNAME: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_DATABASE_NAME: ${POSTGRES_DB}
-      REDIS_HOSTNAME: immich-redis
-      REDIS_PORT: "6379"
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      TZ: ${TZ}
-    volumes:
-      - ${UPLOAD_LOCATION}:/usr/src/app/upload
+      - redis
+      - database
+    restart: unless-stopped
 
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION}
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    env_file:
+      - .env
+    volumes:
+      - model-cache:/cache
     restart: unless-stopped
+
+  redis:
+    image: docker.io/valkey/valkey:8-bookworm
+    restart: unless-stopped
+
+  database:
+    image: postgres:15
     environment:
-      IMMICH_PORT: "2283"
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE_NAME}
       TZ: ${TZ}
     volumes:
-      - ${UPLOAD_LOCATION}:/cache
-
-  immich-db:
-    image: tensorchord/pgvecto-rs:pg14
+      - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
     restart: unless-stopped
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_DB: ${POSTGRES_DB}
-      TZ: ${TZ}
-    volumes:
-      - ./postgres:/var/lib/postgresql/data
 
-  immich-redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    command: ["redis-server", "--requirepass", ${REDIS_PASSWORD}]
-    volumes:
-      - ./redis:/data
-
-  immich-typesense:
-    image: typesense/typesense:0.25.2
-    restart: unless-stopped
-    environment:
-      TYPESENSE_API_KEY: ${REDIS_PASSWORD}
-      TZ: ${TZ}
-    command: ["typesense-server", "--api-key=${REDIS_PASSWORD}", "--data-dir=/data", "--enable-cors"]
-    volumes:
-      - ./typesense:/data
-
-networks:
-  default:
-    name: immich
-EOT
+volumes:
+  model-cache:
+EOF_YAML
+        log_info "Rendered compose file at $compose_file"
 }
 
-docker_compose() {
-    docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" "$@"
+compose_cmd() {
+        local dir="$1"
+        shift
+        (cd "$dir" && COMPOSE_PROJECT_NAME="$SERVICE" docker compose -f docker-compose.yml "$@")
 }
 
-install() {
-    ensure_requirements
-    mkdir -p "${STACK_DIR}" "${STACK_DIR}/library"
-    write_env_file
-    write_compose_file
-    docker_compose pull
-    docker_compose up -d
+install_stack() {
+        require_command docker
+        local dir
+        dir="$(compose_dir)"
+        mkdir -p "$dir" "$dir/library" "$dir/postgres"
+        ensure_env_file "$dir"
+        write_compose "$dir"
+        log_info "Bringing up Immich stack"
+        compose_cmd "$dir" pull
+        compose_cmd "$dir" up -d
 }
 
-remove() {
-    if [[ -f "${COMPOSE_FILE}" ]]; then
-        docker_compose down --remove-orphans || true
-    fi
-    rm -rf "${STACK_DIR}"
+remove_stack() {
+        local dir="$(compose_dir)"
+        if [ -f "$dir/docker-compose.yml" ]; then
+                compose_cmd "$dir" down --remove-orphans || true
+                log_info "Removed Immich containers"
+        fi
 }
 
-restart() {
-    if [[ ! -f "${COMPOSE_FILE}" ]]; then
-        error "Immich stack is not installed. Please install it first."
-        exit 1
-    fi
-    docker_compose restart
+restart_stack() {
+        local dir="$(compose_dir)"
+        compose_cmd "$dir" up -d --remove-orphans
+        log_info "Restarted Immich stack"
 }
 
-case "${ACTION}" in
-    install)
-        install
-        ;;
-    remove)
-        remove
-        ;;
-    restart)
-        restart
-        ;;
-    *)
-        echo "Usage: $0 {install|remove|restart}" >&2
-        exit 1
-        ;;
-esac
+status_stack() {
+        local dir="$(compose_dir)"
+        compose_cmd "$dir" ps
+}
+
+logs_stack() {
+        local dir="$(compose_dir)"
+        compose_cmd "$dir" logs --tail=200
+}
+
+usage() {
+        cat <<EOF_USAGE
+Usage: $0 <install|remove|restart|status|logs>
+EOF_USAGE
+}
+
+main() {
+        local action="${1:-status}"
+        case "$action" in
+                install)
+                        install_stack
+                        ;;
+                remove)
+                        remove_stack
+                        ;;
+                restart)
+                        restart_stack
+                        ;;
+                status)
+                        status_stack
+                        ;;
+                logs)
+                        logs_stack
+                        ;;
+                *)
+                        usage >&2
+                        exit 1
+                        ;;
+        esac
+}
+
+main "$@"

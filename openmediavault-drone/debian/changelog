@@ -1,3 +1,9 @@
+openmediavault-drone (0.2.0) stable; urgency=medium
+
+  * Provide Drone Workbench UI, RPC service, and Docker automation scripts.
+
+ -- Inhaus AI <dev@inhaus.ai>  Tue, 11 Feb 2025 00:00:00 +0000
+
 openmediavault-drone (0.1.0) stable; urgency=medium
 
   * Initial release providing Drone integration for OpenMediaVault 7.

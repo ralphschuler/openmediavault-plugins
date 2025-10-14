@@ -1,128 +1,191 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-ACTION="${1:-}"
-STACK_DIR="/srv/dev-disk-by-label-data/gitea"
-COMPOSE_FILE="${STACK_DIR}/docker-compose.yml"
-ENV_FILE="${STACK_DIR}/.env"
+SERVICE="gitea"
 
-error() {
-    echo "[gitea] $1" >&2
+. /usr/share/openmediavault/scripts/helper-functions
+
+config_get() {
+        local key="$1"
+        omv_config_get "/config/services/${SERVICE}/${key}"
 }
 
-ensure_requirements() {
-    if ! command -v docker >/dev/null 2>&1; then
-        error "Docker is required but not installed."
-        error "Please install Docker first: apt update && apt install -y docker.io"
-        exit 1
-    fi
-    if ! docker compose version >/dev/null 2>&1; then
-        error "The Docker Compose plugin is required but not installed."
-        error "Please install Docker Compose plugin: apt update && apt install -y docker-compose-plugin"
-        exit 1
-    fi
-    if ! systemctl is-active --quiet docker; then
-        error "Docker service is not running."
-        error "Please start Docker service: systemctl start docker"
-        exit 1
-    fi
+log_info() {
+        omv_log "$SERVICE" "$1"
 }
 
-write_env_file() {
-    cat >"${ENV_FILE}" <<EOT
-GITEA_VERSION=1.22-rootless
-POSTGRES_USER=gitea
-POSTGRES_PASSWORD=gitea
-POSTGRES_DB=gitea
-SSH_PORT=2222
-HTTP_PORT=3080
-TZ=UTC
-EOT
+require_command() {
+        if ! command -v "$1" >/dev/null 2>&1; then
+                echo "${SERVICE}: missing dependency '$1'" >&2
+                exit 1
+        fi
 }
 
-write_compose_file() {
-    cat >"${COMPOSE_FILE}" <<'EOT'
+generate_secret() {
+        tr -dc 'A-Za-z0-9' </dev/urandom | head -c "${1:-32}"
+}
+
+compose_dir() {
+        local path
+        path="$(config_get composepath)"
+        if [ -z "$path" ]; then
+                path="/srv/dev-disk-by-label-data/${SERVICE}"
+        fi
+        printf '%s' "$path"
+}
+
+ensure_env_file() {
+        local dir="$1"
+        local env_file="$dir/.env"
+        if [ -f "$env_file" ]; then
+                return 0
+        fi
+
+        mkdir -p "$dir"
+        local tz
+        tz="$(config_get timezone)"
+        if [ -z "$tz" ] && [ -f /etc/timezone ]; then
+                tz="$(cat /etc/timezone)"
+        fi
+        if [ -z "$tz" ]; then
+                tz="UTC"
+        fi
+
+        cat >"$env_file" <<EOF_ENV
+TZ=${tz}
+GITEA_DB_USER=gitea
+GITEA_DB_PASSWORD=$(generate_secret 24)
+GITEA_DB_NAME=gitea
+GITEA_ADMIN_USERNAME=admin
+GITEA_ADMIN_PASSWORD=$(generate_secret 24)
+GITEA_ADMIN_EMAIL=admin@example.com
+EOF_ENV
+        chmod 600 "$env_file"
+        log_info "Created default environment at $env_file"
+}
+
+write_compose() {
+        local dir="$1"
+        local compose_file="$dir/docker-compose.yml"
+        local http_port ssh_port
+        http_port="$(config_get httpport)"
+        ssh_port="$(config_get sshport)"
+        cat >"$compose_file" <<EOF_YAML
+name: ${SERVICE}
+
 services:
-  gitea-server:
-    image: gitea/gitea:${GITEA_VERSION}
-    restart: unless-stopped
-    depends_on:
-      - gitea-db
+  gitea:
+    image: gitea/gitea:1.22
+    env_file:
+      - .env
     environment:
-      USER_UID: 1000
-      USER_GID: 1000
-      GITEA__database__DB_TYPE: postgres
-      GITEA__database__HOST: gitea-db:5432
-      GITEA__database__NAME: ${POSTGRES_DB}
-      GITEA__database__USER: ${POSTGRES_USER}
-      GITEA__database__PASSWD: ${POSTGRES_PASSWORD}
-      GITEA__security__INTERNAL_TOKEN: changeme
-      GITEA__server__ROOT_URL: http://localhost:${HTTP_PORT}/
-      TZ: ${TZ}
-    ports:
-      - "${HTTP_PORT}:3000"
-      - "${SSH_PORT}:2222"
+      USER_UID: "1000"
+      USER_GID: "100"
+      DB_TYPE: postgres
+      DB_HOST: postgres:5432
+      DB_NAME: ${GITEA_DB_NAME}
+      DB_USER: ${GITEA_DB_USER}
+      DB_PASSWD: ${GITEA_DB_PASSWORD}
+      GITEA__server__DOMAIN: ${GITEA_DOMAIN:-localhost}
+      GITEA__database__SSL_MODE: disable
+      GITEA__mailer__ENABLED: "false"
+      GITEA__server__SSH_DOMAIN: ${GITEA_DOMAIN:-localhost}
+      GITEA__security__INSTALL_LOCK: "true"
     volumes:
-      - ./data:/var/lib/gitea
-      - ./config:/etc/gitea
-
-  gitea-db:
-    image: postgres:15-alpine
+      - ./gitea:/data
+    ports:
+      - "${http_port}:3000"
+      - "${ssh_port}:22"
+    depends_on:
+      - postgres
     restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      TZ: ${TZ}
+      POSTGRES_USER: ${GITEA_DB_USER}
+      POSTGRES_PASSWORD: ${GITEA_DB_PASSWORD}
+      POSTGRES_DB: ${GITEA_DB_NAME}
     volumes:
       - ./postgres:/var/lib/postgresql/data
-
-networks:
-  default:
-    name: gitea
-EOT
+    restart: unless-stopped
+EOF_YAML
+        log_info "Rendered compose file at $compose_file"
 }
 
-docker_compose() {
-    docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" "$@"
+compose_cmd() {
+        local dir="$1"
+        shift
+        (cd "$dir" && COMPOSE_PROJECT_NAME="$SERVICE" docker compose -f docker-compose.yml "$@")
 }
 
-install() {
-    ensure_requirements
-    mkdir -p "${STACK_DIR}"
-    write_env_file
-    write_compose_file
-    docker_compose pull
-    docker_compose up -d
+install_stack() {
+        require_command docker
+        local dir
+        dir="$(compose_dir)"
+        mkdir -p "$dir/gitea" "$dir/postgres"
+        ensure_env_file "$dir"
+        write_compose "$dir"
+        log_info "Deploying Gitea"
+        compose_cmd "$dir" pull
+        compose_cmd "$dir" up -d
 }
 
-remove() {
-    if [[ -f "${COMPOSE_FILE}" ]]; then
-        docker_compose down --remove-orphans || true
-    fi
-    rm -rf "${STACK_DIR}"
+remove_stack() {
+        local dir="$(compose_dir)"
+        if [ -f "$dir/docker-compose.yml" ]; then
+                compose_cmd "$dir" down --remove-orphans || true
+                log_info "Removed Gitea containers"
+        fi
 }
 
-restart() {
-    if [[ ! -f "${COMPOSE_FILE}" ]]; then
-        error "Gitea stack is not installed. Please install it first."
-        exit 1
-    fi
-    docker_compose restart
+restart_stack() {
+        local dir="$(compose_dir)"
+        compose_cmd "$dir" up -d --remove-orphans
+        log_info "Restarted Gitea"
 }
 
-case "${ACTION}" in
-    install)
-        install
-        ;;
-    remove)
-        remove
-        ;;
-    restart)
-        restart
-        ;;
-    *)
-        echo "Usage: $0 {install|remove|restart}" >&2
-        exit 1
-        ;;
-esac
+status_stack() {
+        local dir="$(compose_dir)"
+        compose_cmd "$dir" ps
+}
+
+logs_stack() {
+        local dir="$(compose_dir)"
+        compose_cmd "$dir" logs --tail=200
+}
+
+usage() {
+        cat <<EOF_USAGE
+Usage: $0 <install|remove|restart|status|logs>
+EOF_USAGE
+}
+
+main() {
+        local action="${1:-status}"
+        case "$action" in
+                install)
+                        install_stack
+                        ;;
+                remove)
+                        remove_stack
+                        ;;
+                restart)
+                        restart_stack
+                        ;;
+                status)
+                        status_stack
+                        ;;
+                logs)
+                        logs_stack
+                        ;;
+                *)
+                        usage >&2
+                        exit 1
+                        ;;
+        esac
+}
+
+main "$@"

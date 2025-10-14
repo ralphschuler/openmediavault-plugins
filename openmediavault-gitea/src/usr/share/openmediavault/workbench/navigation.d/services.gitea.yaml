@@ -1,0 +1,7 @@
+version: '1.0'
+type: navigation-item
+data:
+    path: 'services.gitea'
+    text: _("Gitea")
+    icon: 'mdi:git'
+    url: '/services/gitea'

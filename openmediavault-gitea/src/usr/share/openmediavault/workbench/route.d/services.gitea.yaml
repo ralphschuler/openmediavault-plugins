@@ -1,0 +1,8 @@
+version: '1.0'
+type: route
+data:
+    url: '/services/gitea'
+    title: _("Gitea")
+    editing: true
+    notificationTitle: _("Updated Gitea settings.")
+    component: omv-services-gitea-form-page

@@ -1,0 +1,7 @@
+version: '1.0'
+type: navigation-item
+data:
+    path: 'services.storecli'
+    text: _("StoreCLI RAID")
+    icon: 'mdi:harddisk'
+    url: '/services/storecli'

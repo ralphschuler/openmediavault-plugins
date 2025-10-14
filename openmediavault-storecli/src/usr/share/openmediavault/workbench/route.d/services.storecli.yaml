@@ -1,0 +1,8 @@
+version: '1.0'
+type: route
+data:
+    url: '/services/storecli'
+    title: _("StoreCLI RAID")
+    editing: true
+    notificationTitle: _("Updated StoreCLI settings.")
+    component: omv-services-storecli-form-page

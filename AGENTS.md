@@ -1,192 +1,130 @@
 # AI Coding Agents Guide
 
-This document provides guidelines for AI coding agents working on the OpenMediaVault Plugins monorepo.
+This monorepo hosts multiple OpenMediaVault 7 plugins that mirror the
+architecture used in the upstream project. Every contribution must align with
+OpenMediaVault's official development practices and the repository-specific
+conventions below.
 
 ## Repository Overview
 
-This monorepo contains multiple OpenMediaVault 7 plugins for Docker-based services. Each plugin provides:
-- Web UI integration within OpenMediaVault
-- Docker Compose service management
-- Debian package creation for distribution
-- Comprehensive documentation and testing
+Each plugin must provide:
 
-## Agent Responsibilities
+- WebUI integration using **Workbench** components.
+- An RPC layer implemented in **PHP** under
+  `src/usr/share/openmediavault/engined/rpc`.
+- Shell helpers in `src/usr/share/openmediavault/mkconf` that manage Docker
+  stacks or operating system services.
+- Debian packaging metadata under `debian/` that produces installable
+  `openmediavault-<service>` packages.
+- Up-to-date documentation describing defaults, configuration, and limitations.
 
-### Code Quality Assurance
-- **Always run linting before committing**: `npm run lint`
-- **Apply consistent formatting**: `npm run format`
-- **Follow established patterns** from existing plugins
-- **Validate changes** through testing and manual verification
+Consult [`docs/DEVELOPER_GUIDELINES.md`](docs/DEVELOPER_GUIDELINES.md) for a
+complete workflow derived from the upstream developer handbook at
+<https://docs.openmediavault.org/en/stable/development/index.html>.
 
-### Plugin Development Standards
+## Code Quality Checklist
 
-#### File Structure Compliance
-Ensure new plugins follow the standard structure:
+- Run `npm run format` and `npm run lint` at the repository root before every
+  commit.
+- Keep PHP, YAML, JSON, and shell sources readable—use spaces, wrap long lines,
+  and add comments for non-obvious logic.
+- Update `debian/changelog` whenever a plugin's behaviour changes.
+- Write descriptive commit messages that mention the affected plugin(s).
+
+## Plugin Development Standards
+
+### File layout
+
 ```
 openmediavault-<service>/
-├── debian/                    # Packaging metadata
-│   ├── changelog             # Version history (Semantic Versioning)
-│   ├── control              # Package dependencies and description
-│   └── install              # File installation mapping
-├── src/                      # Source files for target system
-│   ├── usr/share/openmediavault/engined/rpc/     # Python RPC service
-│   ├── usr/share/openmediavault/mkconf/          # Shell management script
-│   └── var/www/openmediavault/js/omv/module/     # JavaScript web UI
-└── README.md                 # Plugin documentation
+├── debian/
+│   ├── changelog
+│   ├── control
+│   ├── install
+│   └── rules
+└── src/usr/share/openmediavault/
+    ├── confdb/create.d/
+    ├── datamodels/
+    ├── engined/module/
+    ├── engined/rpc/
+    ├── mkconf/
+    └── workbench/
 ```
 
-#### Code Architecture Requirements
+> Do **not** place new UI assets under `var/www`; all new pages must be Workbench
+> YAML files.
 
-**Python RPC Services** (`*.py`):
-- Inherit from `BaseDockerService` when available
-- Implement standard methods: `getStatus()`, `install()`, `remove()`, `restart()`, `getLogs()`
-- Use shell script execution for Docker operations
-- Include comprehensive error handling and logging
-- Located in: `src/usr/share/openmediavault/engined/rpc/`
+### Architecture expectations
 
-**JavaScript Web UI** (`*.js`):
-- Extend `BaseDockerServicePanel` when available
-- Implement consistent button layouts: Install, Remove, Restart, Open Web Interface, View Logs
-- Add confirmation dialogs for destructive operations
-- Provide user feedback for all actions
-- Located in: `src/var/www/openmediavault/js/omv/module/`
+- **Configuration database (ConfDB)**: Define schemas in
+  `datamodels/conf.service.<name>.json`, bootstrap defaults in
+  `confdb/create.d/`, and add migrations when changing existing keys.
+- **RPC services**: Implement classes extending `\OMV\Rpc\ServiceAbstract`,
+  retrieve config objects via `\OMV\Config\Database`, and execute shell helpers
+  with `\OMV\System\Process` inside try/catch blocks that surface helpful error
+  messages.
+- **Engine modules**: Extend `\OMV\Engine\Module\ServiceAbstract`, implement
+  `getStatus()` to expose `enabled` and `running`, and register listeners in
+  `bindListeners()` so configuration changes mark the module dirty.
+- **Shell helpers (`mkconf`)**: POSIX compliant scripts with
+  `set -euo pipefail` that implement `install`, `remove`, `restart`, `status`,
+  and `logs`. Validate dependencies like Docker and log actions via `omv_log`.
+- **Workbench UI**: Declare navigation entries, routes, and form pages under
+  `workbench/` using translated strings (`_()`), standard button templates, and
+  RPC-backed actions.
 
-**Shell Management Scripts** (no extension):
-- Include `set -euo pipefail` header for safety
-- Implement actions: `install`, `remove`, `restart`, `status`
-- Perform Docker requirement validation with helpful error messages
-- Generate Docker Compose and environment files
-- Located in: `src/usr/share/openmediavault/mkconf/`
+### Workflow
 
-### Development Workflow
+1. Review the corresponding implementation in the official repository for
+   patterns: <https://github.com/openmediavault/openmediavault>.
+2. Modify the ConfDB schema and defaults when introducing new settings.
+3. Keep `install` idempotent—rerunning it should reconcile the stack safely.
+4. Log significant actions to `/var/log/openmediavault/<service>.log`.
+5. Document behavioural changes in the plugin README and changelog.
 
-#### Making Changes
-1. **Identify the scope**: Determine which plugin(s) are affected
-2. **Update version**: Modify `debian/changelog` if behavior changes
-3. **Follow patterns**: Use existing plugins as reference for new implementations
-4. **Test thoroughly**: Verify functionality before committing
-5. **Document changes**: Update README.md files as needed
+### Verification
 
-#### Quality Checks
-Before finalizing any changes:
+Before opening a PR or committing:
+
 ```bash
-# Lint all code
-npm run lint
-
-# Format all code
 npm run format
-
-# Verify no unintended changes
-git status
-git diff
+npm run lint
 ```
 
-#### Testing Protocol
-- **Manual verification**: Install plugin on OpenMediaVault 7.x system
-- **UI testing**: Verify all buttons and functionality work correctly
-- **Docker operations**: Test install, remove, restart, and status operations
-- **Log validation**: Ensure error messages are clear and helpful
+Build each touched plugin with `dpkg-buildpackage -b -us -uc` and test the
+resulting `.deb` on an OMV 7 system. Validate that:
 
-### Common Patterns and Anti-Patterns
+- The Workbench UI saves configuration changes.
+- Install/Remove/Restart buttons work.
+- `mkconf <service> status` provides meaningful output.
+- `mkconf <service> logs` returns recent log entries.
 
-#### ✅ Follow These Patterns
+### Patterns and anti-patterns
 
-**Error Handling**:
-```bash
-error() {
-    echo "[service] $1" >&2
-}
+**Prefer**
 
-if ! command -v docker >/dev/null 2>&1; then
-    error "Docker is required but not installed."
-    error "Please install Docker first: apt update && apt install -y docker.io"
-    exit 1
-fi
-```
+- Using `omv_config_get` / `omv_config_add_key` helpers.
+- Generating secrets programmatically.
+- Storing generated artefacts under `/srv/` for easy backup.
+- Emitting actionable error messages when dependencies are missing.
 
-**Python Service Structure**:
-```python
-from BaseDockerService import BaseDockerService
+**Avoid**
 
-class ServiceExample(BaseDockerService):
-    name = "Example"
-    mkconf_script = "/usr/share/openmediavault/mkconf/example"
-    compose_name = "example"
-```
+- Hardcoding paths outside `/srv` or `/var/lib/openmediavault`.
+- Mixing ExtJS artefacts with Workbench UI.
+- Triggering shell commands directly from the UI without an RPC service.
+- Leaving temporary files world-readable.
 
-**Web UI Panel Structure**:
-```javascript
-Ext.define("OMV.module.admin.service.example.Example", {
-    extend: "OMV.workspace.panel.Panel",
-    // Use BaseDockerServicePanel when available
-    // Implement consistent button actions
-});
-```
+## Communication
 
-#### ❌ Avoid These Anti-Patterns
+- Reference the upstream developer manual when discussing design choices.
+- Surface TODOs or follow-up work in commit messages or PR descriptions rather
+  than leaving inline comments.
+- Keep conversations focused on reproducible behaviour and testing evidence.
 
-- **Don't hardcode secrets** in configuration files
-- **Don't skip error handling** for Docker operations
-- **Don't duplicate code** - use base classes from `common/`
-- **Don't modify existing working plugins** unless necessary for the task
-- **Don't skip linting and formatting** checks
-- **Don't commit without testing** functionality
+## Resources
 
-### Special Considerations
-
-#### Monorepo Structure
-- Changes are automatically detected by CI/CD
-- Only modified plugins are built and released
-- Shared components in `common/` benefit all plugins
-- Cross-plugin dependencies should be minimized
-
-#### Backward Compatibility
-- Base classes in `common/` are designed to be optional
-- Plugins should work with or without common module installed
-- Always provide fallback implementations
-
-#### Documentation Standards
-- Each plugin must have comprehensive README.md
-- Installation instructions should be clear and complete
-- Configuration options must be documented
-- Development setup should be explained
-
-#### Security Best Practices
-- Validate all user inputs appropriately
-- Generate random secrets where needed
-- Follow OpenMediaVault security guidelines
-- Don't expose sensitive information in logs
-
-## Agent Communication Protocol
-
-### Progress Reporting
-When working on tasks:
-1. **Create clear commit messages** describing changes made
-2. **Update progress regularly** using the reporting tools
-3. **Document completion status** for each checklist item
-4. **Validate changes** before marking tasks complete
-
-### Issue Resolution
-When encountering problems:
-1. **Check existing implementations** for reference patterns
-2. **Consult documentation** in README files and comments
-3. **Follow established workflows** rather than creating new approaches
-4. **Ask for clarification** if requirements are unclear
-
-### Code Review Readiness
-Ensure all changes are ready for human review:
-- All linting passes without errors
-- Formatting is consistent across all files
-- Functionality has been manually verified
-- Documentation is updated appropriately
-- No unintended side effects have been introduced
-
-## Resources and References
-
-- **Base Classes**: See `common/` directory for reusable components
-- **Plugin Examples**: Reference `openmediavault-immich`, `openmediavault-gitea`, `openmediavault-drone`
-- **OpenMediaVault Documentation**: [Official OMV docs](https://docs.openmediavault.org/)
-- **Docker Compose Reference**: [Official Docker docs](https://docs.docker.com/compose/)
-- **Debian Packaging**: [Debian Policy Manual](https://www.debian.org/doc/debian-policy/)
-
-This guide ensures consistent, high-quality contributions while maintaining the project's architectural integrity and user experience standards.
+- Upstream developer manual: <https://docs.openmediavault.org/en/stable/development/index.html>
+- Reference implementation: <https://github.com/openmediavault/openmediavault>
+- Docker Compose specification: <https://docs.docker.com/compose/compose-file/>
+- Debian packaging policy: <https://www.debian.org/doc/debian-policy/>

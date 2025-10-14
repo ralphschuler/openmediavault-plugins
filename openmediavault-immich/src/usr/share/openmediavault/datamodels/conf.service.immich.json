@@ -1,0 +1,36 @@
+{
+        "type": "config",
+        "id": "conf.service.immich",
+        "title": "Immich",
+        "queryinfo": {
+                "xpath": ".//services/immich",
+                "iterable": false
+        },
+        "properties": {
+                "enable": {
+                        "type": "boolean",
+                        "default": false
+                },
+                "composepath": {
+                        "type": "string",
+                        "default": "/srv/dev-disk-by-label-data/immich",
+                        "pattern": "^/.+"
+                },
+                "timezone": {
+                        "type": "string",
+                        "default": ""
+                },
+                "serverport": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 65535,
+                        "default": 2283
+                },
+                "webport": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 65535,
+                        "default": 2285
+                }
+        }
+}

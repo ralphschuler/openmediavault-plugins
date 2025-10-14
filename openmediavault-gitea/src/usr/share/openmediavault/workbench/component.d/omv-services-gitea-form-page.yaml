@@ -1,0 +1,108 @@
+version: '1.0'
+type: component
+data:
+    name: omv-services-gitea-form-page
+    type: formPage
+    config:
+        request:
+            service: Gitea
+            get:
+                method: get
+            post:
+                method: set
+        hints:
+            - type: info
+              text: _("The install action provisions PostgreSQL and Gitea containers using the values below. Update the generated .env file to set production credentials and hostname.")
+              dismissible: true
+              stateId: 69b40a7f-8945-469b-8f06-5d3c80870dfc
+        fields:
+            - type: checkbox
+              name: enable
+              label: _("Enabled")
+              value: false
+            - type: textInput
+              name: composepath
+              label: _("Data directory")
+              hint: _("Directory where configuration and repositories are stored.")
+              validators:
+                  required: true
+              value: '/srv/dev-disk-by-label-data/gitea'
+            - type: textInput
+              name: timezone
+              label: _("Timezone")
+              hint: _("Leave empty to inherit the system timezone.")
+              value: ''
+            - type: numberInput
+              name: httpport
+              label: _("HTTP port")
+              validators:
+                  min: 1
+                  max: 65535
+                  required: true
+              value: 3080
+            - type: numberInput
+              name: sshport
+              label: _("SSH port")
+              validators:
+                  min: 1
+                  max: 65535
+                  required: true
+              value: 2222
+        buttons:
+            - template: submit
+            - template: cancel
+              execute:
+                  type: url
+                  url: '/services'
+            - text: _("Install stack")
+              enabledConstraint:
+                  operator: truthy
+                  arg0:
+                      prop: enable
+              execute:
+                  type: rpc
+                  request:
+                      service: Gitea
+                      method: install
+              successNotificationTitle: _("Gitea deployment triggered.")
+            - text: _("Restart")
+              enabledConstraint:
+                  operator: truthy
+                  arg0:
+                      prop: enable
+              execute:
+                  type: rpc
+                  request:
+                      service: Gitea
+                      method: restart
+              successNotificationTitle: _("Gitea restart started.")
+            - text: _("Remove stack")
+              execute:
+                  type: rpc
+                  request:
+                      service: Gitea
+                      method: remove
+              confirm:
+                  title: _("Remove Gitea stack")
+                  text: _("Containers will be stopped. Data remains on disk.")
+              successNotificationTitle: _("Gitea stack removal triggered.")
+            - text: _("Show status")
+              execute:
+                  type: rpc
+                  request:
+                      service: Gitea
+                      method: status
+              dialog:
+                  title: _("Gitea stack status")
+                  type: text
+                  valueField: stdout
+            - text: _("Show logs")
+              execute:
+                  type: rpc
+                  request:
+                      service: Gitea
+                      method: logs
+              dialog:
+                  title: _("Recent Gitea logs")
+                  type: text
+                  valueField: stdout

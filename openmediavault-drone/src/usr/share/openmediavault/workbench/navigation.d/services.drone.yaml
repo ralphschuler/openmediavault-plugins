@@ -1,0 +1,7 @@
+version: '1.0'
+type: navigation-item
+data:
+    path: 'services.drone'
+    text: _("Drone")
+    icon: 'mdi:rocket'
+    url: '/services/drone'
