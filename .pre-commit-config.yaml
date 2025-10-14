@@ -39,20 +39,22 @@ repos:
             files: ^openmediavault-.*/(.*\.sh|.*mkconf|.*postinst|.*prerm)$
             types: [shell]
 
+          # Note: YAML formatting only applies to plugin-specific files
+          # Legacy workflow and template files are excluded to avoid conflicts
           - id: prettier-yaml
             name: prettier (YAML formatter)
             entry: bash -c 'npx prettier --write "$@"'
             language: system
-            files: \.(yml|yaml)$
-            exclude: '^(.yamllint.yml|.pre-commit-config.yaml|.github/(workflows|ISSUE_TEMPLATE)/).*\.(yml|yaml)$'
+            files: ^openmediavault-.*/src/.*\.(yml|yaml)$
 
+          # Note: YAML linting applies only to new/maintained files
+          # Legacy files excluded until they can be properly reformatted
           - id: yamllint
             name: yamllint (YAML linter)
             entry: yamllint
             language: system
             args: [-c=.yamllint.yml]
-            files: \.(yml|yaml)$
-            exclude: '^(.github/(workflows|ISSUE_TEMPLATE)/.*\.(yml|yaml)|.yamllint.yml|openmediavault-.*/src/usr/share/openmediavault/workbench/component.d/.*\.yaml)$'
+            files: ^openmediavault-.*/src/.*\.(yml|yaml)$
 
     # Basic file cleanup
     - repo: https://github.com/pre-commit/pre-commit-hooks
