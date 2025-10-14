@@ -21,6 +21,7 @@
     "type": "git",
     "url": "https://github.com/ralphschuler/openmediavault-plugins.git"
   },
+  "author": "Ralph Schuler",
   "license": "MIT",
   "devDependencies": {
     "eslint": "^9.0.0",

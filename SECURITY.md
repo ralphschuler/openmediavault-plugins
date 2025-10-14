@@ -19,7 +19,7 @@ We take security vulnerabilities seriously and appreciate your efforts to respon
 
 **Please do NOT report security vulnerabilities through public GitHub issues.**
 
-Instead, please report security vulnerabilities by emailing: **[maintainer-email]**
+Instead, please report security vulnerabilities by emailing: **ralph@schuler.io**
 
 Include the following information:
 - Type of issue (e.g., buffer overflow, SQL injection, cross-site scripting, etc.)
@@ -159,7 +159,7 @@ When contributing to this project, please follow these security guidelines:
 ## Contact Information
 
 For security-related questions or concerns:
-- **Email**: [maintainer-email]
+- **Email**: ralph@schuler.io
 - **GitHub**: Create a private security advisory
 - **Response Time**: 48 hours for acknowledgment
 
