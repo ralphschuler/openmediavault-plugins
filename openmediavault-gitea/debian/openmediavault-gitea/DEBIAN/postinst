@@ -1,8 +1,0 @@
-#!/bin/bash
-set -e
-
-if command -v omv-confdbadm >/dev/null 2>&1; then
-    omv-confdbadm migrate conf.service.gitea || true
-fi
-
-exit 0
