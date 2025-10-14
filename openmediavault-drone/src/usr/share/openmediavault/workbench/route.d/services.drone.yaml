@@ -1,0 +1,8 @@
+version: '1.0'
+type: route
+data:
+    url: '/services/drone'
+    title: _("Drone")
+    editing: true
+    notificationTitle: _("Updated Drone settings.")
+    component: omv-services-drone-form-page

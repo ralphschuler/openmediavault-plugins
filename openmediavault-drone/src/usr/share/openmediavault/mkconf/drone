@@ -1,140 +1,172 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-ACTION="${1:-}"
-STACK_DIR="/srv/dev-disk-by-label-data/drone"
-COMPOSE_FILE="${STACK_DIR}/docker-compose.yml"
-ENV_FILE="${STACK_DIR}/.env"
+SERVICE="drone"
 
-error() {
-    echo "[drone] $1" >&2
+. /usr/share/openmediavault/scripts/helper-functions
+
+config_get() {
+        local key="$1"
+        omv_config_get "/config/services/${SERVICE}/${key}"
 }
 
-ensure_requirements() {
-    if ! command -v docker >/dev/null 2>&1; then
-        error "Docker is required but not installed."
-        error "Please install Docker first: apt update && apt install -y docker.io"
-        exit 1
-    fi
-    if ! docker compose version >/dev/null 2>&1; then
-        error "The Docker Compose plugin is required but not installed."
-        error "Please install Docker Compose plugin: apt update && apt install -y docker-compose-plugin"
-        exit 1
-    fi
-    if ! systemctl is-active --quiet docker; then
-        error "Docker service is not running."
-        error "Please start Docker service: systemctl start docker"
-        exit 1
-    fi
+log_info() {
+        omv_log "$SERVICE" "$1"
 }
 
-random_secret() {
-    if command -v openssl >/dev/null 2>&1; then
-        openssl rand -hex 16
-    else
-        date +%s | sha256sum | cut -c1-32
-    fi
+require_command() {
+        if ! command -v "$1" >/dev/null 2>&1; then
+                echo "${SERVICE}: missing dependency '$1'" >&2
+                exit 1
+        fi
 }
 
-write_env_file() {
-    local secret
-    if [[ -f "${ENV_FILE}" ]]; then
-        # Preserve existing secret to avoid breaking runners.
-        secret=$(grep '^DRONE_RPC_SECRET=' "${ENV_FILE}" | cut -d'=' -f2- || true)
-    fi
-    if [[ -z "${secret:-}" ]]; then
-        secret=$(random_secret)
-    fi
+generate_secret() {
+        tr -dc 'A-Za-z0-9' </dev/urandom | head -c "${1:-32}"
+}
 
-    cat >"${ENV_FILE}" <<EOT
-DRONE_SERVER_HOST=localhost:8080
-DRONE_SERVER_PROTO=http
+compose_dir() {
+        local path
+        path="$(config_get composepath)"
+        if [ -z "$path" ]; then
+                path="/srv/dev-disk-by-label-data/${SERVICE}"
+        fi
+        printf '%s' "$path"
+}
+
+ensure_env_file() {
+        local dir="$1"
+        local env_file="$dir/.env"
+        if [ -f "$env_file" ]; then
+                return 0
+        fi
+
+        mkdir -p "$dir"
+        local secret
+        secret="$(generate_secret 48)"
+
+        cat >"$env_file" <<EOF_ENV
 DRONE_RPC_SECRET=${secret}
-DRONE_USER_CREATE=username:admin,admin:true
-TZ=UTC
-EOT
+DRONE_SERVER_HOST=${DRONE_SERVER_HOST:-drone.local}
+DRONE_SERVER_PROTO=http
+EOF_ENV
+        chmod 600 "$env_file"
+        log_info "Created default environment at $env_file"
 }
 
-write_compose_file() {
-    cat >"${COMPOSE_FILE}" <<'EOT'
+write_compose() {
+        local dir="$1"
+        local compose_file="$dir/docker-compose.yml"
+        local port
+        port="$(config_get serverport)"
+        cat >"$compose_file" <<EOF_YAML
+name: ${SERVICE}
+
 services:
   drone-server:
     image: drone/drone:2
-    restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      DRONE_SERVER_HOST: ${DRONE_SERVER_HOST}
-      DRONE_SERVER_PROTO: ${DRONE_SERVER_PROTO}
-      DRONE_RPC_SECRET: ${DRONE_RPC_SECRET}
       DRONE_DATABASE_DRIVER: sqlite3
       DRONE_DATABASE_DATASOURCE: /data/database.sqlite
-      DRONE_USER_CREATE: ${DRONE_USER_CREATE}
-      TZ: ${TZ}
-    ports:
-      - "8080:80"
+      DRONE_RUNNER_CAPACITY: 2
     volumes:
       - ./data:/data
+    ports:
+      - "${port}:80"
+    restart: unless-stopped
 
   drone-runner:
     image: drone/drone-runner-docker:1
-    restart: unless-stopped
-    depends_on:
-      - drone-server
+    env_file:
+      - .env
     environment:
-      DRONE_RPC_PROTO: ${DRONE_SERVER_PROTO}
       DRONE_RPC_HOST: drone-server
+      DRONE_RPC_PROTO: http
       DRONE_RPC_SECRET: ${DRONE_RPC_SECRET}
       DRONE_RUNNER_CAPACITY: 2
-      DRONE_RUNNER_NAME: omv-runner
-      TZ: ${TZ}
+      DRONE_RUNNER_NAME: openmediavault
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-
-networks:
-  default:
-    name: drone
-EOT
+    depends_on:
+      - drone-server
+    restart: unless-stopped
+EOF_YAML
+        log_info "Rendered compose file at $compose_file"
 }
 
-docker_compose() {
-    docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" "$@"
+compose_cmd() {
+        local dir="$1"
+        shift
+        (cd "$dir" && COMPOSE_PROJECT_NAME="$SERVICE" docker compose -f docker-compose.yml "$@")
 }
 
-install() {
-    ensure_requirements
-    mkdir -p "${STACK_DIR}"
-    write_env_file
-    write_compose_file
-    docker_compose pull
-    docker_compose up -d
+install_stack() {
+        require_command docker
+        local dir
+        dir="$(compose_dir)"
+        mkdir -p "$dir/data"
+        ensure_env_file "$dir"
+        write_compose "$dir"
+        log_info "Deploying Drone"
+        compose_cmd "$dir" pull
+        compose_cmd "$dir" up -d
 }
 
-remove() {
-    if [[ -f "${COMPOSE_FILE}" ]]; then
-        docker_compose down --remove-orphans || true
-    fi
-    rm -rf "${STACK_DIR}"
+remove_stack() {
+        local dir="$(compose_dir)"
+        if [ -f "$dir/docker-compose.yml" ]; then
+                compose_cmd "$dir" down --remove-orphans || true
+                log_info "Removed Drone containers"
+        fi
 }
 
-restart() {
-    if [[ ! -f "${COMPOSE_FILE}" ]]; then
-        error "Drone stack is not installed. Please install it first."
-        exit 1
-    fi
-    docker_compose restart
+restart_stack() {
+        local dir="$(compose_dir)"
+        compose_cmd "$dir" up -d --remove-orphans
+        log_info "Restarted Drone"
 }
 
-case "${ACTION}" in
-    install)
-        install
-        ;;
-    remove)
-        remove
-        ;;
-    restart)
-        restart
-        ;;
-    *)
-        echo "Usage: $0 {install|remove|restart}" >&2
-        exit 1
-        ;;
-esac
+status_stack() {
+        local dir="$(compose_dir)"
+        compose_cmd "$dir" ps
+}
+
+logs_stack() {
+        local dir="$(compose_dir)"
+        compose_cmd "$dir" logs --tail=200
+}
+
+usage() {
+        cat <<EOF_USAGE
+Usage: $0 <install|remove|restart|status|logs>
+EOF_USAGE
+}
+
+main() {
+        local action="${1:-status}"
+        case "$action" in
+                install)
+                        install_stack
+                        ;;
+                remove)
+                        remove_stack
+                        ;;
+                restart)
+                        restart_stack
+                        ;;
+                status)
+                        status_stack
+                        ;;
+                logs)
+                        logs_stack
+                        ;;
+                *)
+                        usage >&2
+                        exit 1
+                        ;;
+        esac
+}
+
+main "$@"

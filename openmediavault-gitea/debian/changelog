@@ -1,3 +1,10 @@
+openmediavault-gitea (0.2.0) stable; urgency=medium
+
+  * Add Workbench configuration page, RPC layer, and Docker Compose stack
+    management for Gitea deployments.
+
+ -- Inhaus AI <dev@inhaus.ai>  Tue, 11 Feb 2025 00:00:00 +0000
+
 openmediavault-gitea (0.1.0) stable; urgency=medium
 
   * Initial release providing Gitea service integration for OpenMediaVault 7.

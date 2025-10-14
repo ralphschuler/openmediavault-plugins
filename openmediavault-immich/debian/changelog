@@ -1,3 +1,10 @@
+openmediavault-immich (0.2.0) stable; urgency=medium
+
+  * Implement full OpenMediaVault integration using Workbench UI, RPC
+    services, and Docker Compose automation.
+
+ -- Inhaus AI <dev@inhaus.ai>  Tue, 11 Feb 2025 00:00:00 +0000
+
 openmediavault-immich (0.1.0) stable; urgency=medium
 
   * Initial release providing Immich service integration for OpenMediaVault 7.

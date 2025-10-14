@@ -1,0 +1,99 @@
+version: '1.0'
+type: component
+data:
+    name: omv-services-drone-form-page
+    type: formPage
+    config:
+        request:
+            service: Drone
+            get:
+                method: get
+            post:
+                method: set
+        hints:
+            - type: info
+              text: _("The install action deploys a Drone server and Docker runner backed by an embedded SQLite database. Update the generated .env file to match your upstream source control configuration.")
+              dismissible: true
+              stateId: 8ec8df77-5cc9-4d46-9da5-7c5db49a6528
+        fields:
+            - type: checkbox
+              name: enable
+              label: _("Enabled")
+              value: false
+            - type: textInput
+              name: composepath
+              label: _("Data directory")
+              hint: _("Directory where the Drone data volume and compose files are stored.")
+              validators:
+                  required: true
+              value: '/srv/dev-disk-by-label-data/drone'
+            - type: textInput
+              name: timezone
+              label: _("Timezone")
+              value: ''
+            - type: numberInput
+              name: serverport
+              label: _("Web port")
+              validators:
+                  min: 1
+                  max: 65535
+                  required: true
+              value: 8080
+        buttons:
+            - template: submit
+            - template: cancel
+              execute:
+                  type: url
+                  url: '/services'
+            - text: _("Install stack")
+              enabledConstraint:
+                  operator: truthy
+                  arg0:
+                      prop: enable
+              execute:
+                  type: rpc
+                  request:
+                      service: Drone
+                      method: install
+              successNotificationTitle: _("Drone deployment triggered.")
+            - text: _("Restart")
+              enabledConstraint:
+                  operator: truthy
+                  arg0:
+                      prop: enable
+              execute:
+                  type: rpc
+                  request:
+                      service: Drone
+                      method: restart
+              successNotificationTitle: _("Drone restart started.")
+            - text: _("Remove stack")
+              execute:
+                  type: rpc
+                  request:
+                      service: Drone
+                      method: remove
+              confirm:
+                  title: _("Remove Drone stack")
+                  text: _("Containers will stop but data remains on disk.")
+              successNotificationTitle: _("Drone stack removal triggered.")
+            - text: _("Show status")
+              execute:
+                  type: rpc
+                  request:
+                      service: Drone
+                      method: status
+              dialog:
+                  title: _("Drone stack status")
+                  type: text
+                  valueField: stdout
+            - text: _("Show logs")
+              execute:
+                  type: rpc
+                  request:
+                      service: Drone
+                      method: logs
+              dialog:
+                  title: _("Recent Drone logs")
+                  type: text
+                  valueField: stdout

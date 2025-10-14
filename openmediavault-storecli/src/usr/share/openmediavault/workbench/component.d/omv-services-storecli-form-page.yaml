@@ -1,0 +1,91 @@
+version: '1.0'
+type: component
+data:
+    name: omv-services-storecli-form-page
+    type: formPage
+    config:
+        request:
+            service: Storecli
+            get:
+                method: get
+            post:
+                method: set
+        hints:
+            - type: info
+              text: _("The plugin exposes read-only commands from storecli/storcli. Install the vendor package first.")
+              dismissible: true
+              stateId: 5f96e433-406c-4a5f-9a40-32658d1e8036
+        fields:
+            - type: checkbox
+              name: enable
+              label: _("Enabled")
+              value: false
+            - type: textInput
+              name: binary
+              label: _("Primary binary")
+              hint: _("Binary name or path used for controller queries.")
+              value: 'storecli64'
+            - type: textInput
+              name: fallback
+              label: _("Fallback binary")
+              hint: _("Used when the primary binary is not available.")
+              value: 'storcli64'
+            - type: textInput
+              name: controller
+              label: _("Controller ID")
+              hint: _("Numeric controller slot used for the detail view.")
+              value: '0'
+              submitValue: false
+              validators:
+                  pattern: "^\\d+$"
+        buttons:
+            - template: submit
+            - template: cancel
+              execute:
+                  type: url
+                  url: '/services'
+            - text: _("Refresh summary")
+              enabledConstraint:
+                  operator: truthy
+                  arg0:
+                      prop: enable
+              execute:
+                  type: rpc
+                  request:
+                      service: Storecli
+                      method: summary
+              dialog:
+                  title: _("Controller summary")
+                  type: text
+                  valueField: stdout
+            - text: _("Show events")
+              enabledConstraint:
+                  operator: truthy
+                  arg0:
+                      prop: enable
+              execute:
+                  type: rpc
+                  request:
+                      service: Storecli
+                      method: events
+              dialog:
+                  title: _("Recent controller events")
+                  type: text
+                  valueField: stdout
+            - text: _("Inspect controller")
+              enabledConstraint:
+                  operator: truthy
+                  arg0:
+                      prop: enable
+              execute:
+                  type: rpc
+                  request:
+                      service: Storecli
+                      method: controller
+                      params:
+                          controller:
+                              prop: controller
+              dialog:
+                  title: _("Controller details")
+                  type: text
+                  valueField: stdout

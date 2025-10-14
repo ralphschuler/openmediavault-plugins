@@ -1,0 +1,36 @@
+{
+        "type": "config",
+        "id": "conf.service.gitea",
+        "title": "Gitea",
+        "queryinfo": {
+                "xpath": ".//services/gitea",
+                "iterable": false
+        },
+        "properties": {
+                "enable": {
+                        "type": "boolean",
+                        "default": false
+                },
+                "composepath": {
+                        "type": "string",
+                        "default": "/srv/dev-disk-by-label-data/gitea",
+                        "pattern": "^/.+"
+                },
+                "timezone": {
+                        "type": "string",
+                        "default": ""
+                },
+                "httpport": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 65535,
+                        "default": 3080
+                },
+                "sshport": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 65535,
+                        "default": 2222
+                }
+        }
+}

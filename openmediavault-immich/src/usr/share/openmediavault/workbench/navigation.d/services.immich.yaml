@@ -1,0 +1,7 @@
+version: '1.0'
+type: navigation-item
+data:
+    path: 'services.immich'
+    text: _("Immich")
+    icon: 'mdi:image-multiple'
+    url: '/services/immich'
