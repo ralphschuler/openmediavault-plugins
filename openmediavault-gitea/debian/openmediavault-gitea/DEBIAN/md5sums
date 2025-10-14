@@ -1,0 +1,6 @@
+8b227a428d2cb52878104d7b0573f76e  usr/share/doc/openmediavault-gitea/changelog.gz
+903c91d57951bff2bca4fa3c50688513  usr/share/openmediavault/openmediavault/engined/rpc/Gitea.py
+85b8124d16e40cd8b345fecdcf25c081  usr/share/openmediavault/openmediavault/icons/gitea.svg
+b9b126767164cb1f23fbedb98cd129e0  usr/share/openmediavault/openmediavault/mkconf/gitea
+ab8fd593622f54bf33e271bba3c70413  usr/share/openmediavault/openmediavault/web/js/omv/module/admin/service/Gitea.js
+fe10147f57037c60b16e0f74e7b09d61  usr/share/openmediavault/openmediavault/workbench/component.d/gitea.yaml
