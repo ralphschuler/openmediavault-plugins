@@ -152,13 +152,13 @@ jobs:
                   xz -fc dists/stable/main/binary-all/Packages > dists/stable/main/binary-all/Packages.xz
 
                   # Create symlinks for architecture-specific directories
-                  cp dists/stable/main/binary-all/Packages dists/stable/main/binary-amd64/Packages
-                  cp dists/stable/main/binary-all/Packages.gz dists/stable/main/binary-amd64/Packages.gz
-                  cp dists/stable/main/binary-all/Packages.xz dists/stable/main/binary-amd64/Packages.xz
+                  ln -s ../binary-all/Packages dists/stable/main/binary-amd64/Packages
+                  ln -s ../binary-all/Packages.gz dists/stable/main/binary-amd64/Packages.gz
+                  ln -s ../binary-all/Packages.xz dists/stable/main/binary-amd64/Packages.xz
 
-                  cp dists/stable/main/binary-all/Packages dists/stable/main/binary-arm64/Packages
-                  cp dists/stable/main/binary-all/Packages.gz dists/stable/main/binary-arm64/Packages.gz
-                  cp dists/stable/main/binary-all/Packages.xz dists/stable/main/binary-arm64/Packages.xz
+                  ln -s ../binary-all/Packages dists/stable/main/binary-arm64/Packages
+                  ln -s ../binary-all/Packages.gz dists/stable/main/binary-arm64/Packages.gz
+                  ln -s ../binary-all/Packages.xz dists/stable/main/binary-arm64/Packages.xz
 
                   apt-ftparchive \
                       -o APT::FTPArchive::Release::Origin="OpenMediaVault Plugins" \
